@@ -4,6 +4,14 @@ This file tracks all architectural, design, and implementation changes across th
 
 ---
 
+## [v1.2.2] — 2026-10-07
+### Backend Specification & Repository Completeness
+- **Backend Directory Infrastructure**:
+  - Authored [`backend/README.md`](backend/README.md) documenting the expected FastAPI endpoints, request/response JSON schemas, and MIRT estimation requirements for upcoming backend development.
+  - Ensures clean repository structure on GitHub with both `frontend/` and `backend/` fully documented.
+
+---
+
 ## [v1.2.1] — 2026-10-07
 ### Documentation, Repository Organization & Agent Infrastructure
 - **Git Organization**:
