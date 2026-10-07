@@ -4,6 +4,27 @@ This file tracks all architectural, design, and implementation changes across th
 
 ---
 
+## [v1.3.0] — 2026-10-07
+### Dashboard Visual Hierarchy & Premium Design System Refinement
+- **Visual System & Aesthetic Overhaul (Linear / Vercel Diagnostic Aesthetic)**:
+  - Transitioned from saturated card backgrounds to a restrained, clinical palette (`#F8FAFC` background, `#FFFFFF` surfaces, `#E5E7EB` borders, `#2563EB` solid accent).
+  - Replaced the blue-purple gradient treatment on the **Next Best Action** card with a clean, authoritative card with a solid blue left-border indicator (`border-l-4 border-l-blue-600`).
+- **High-Visibility Mastery KPI**:
+  - Elevated the `71% Estimated Mastery` metric into a prominent KPI block alongside the page header with active calibration indicator and `45 active concepts • 89% reliability`.
+- **Next Best Action Card Enhancements**:
+  - Elevated `Gibbs Energy (ΔG)` as the dominant action title.
+  - Positioned `63% posterior uncertainty` in a visually prominent, semantic purple badge on the top row.
+  - Made the prerequisite dependency gating (`Cell Potential` and `Equilibrium Constant`) immediately scannable.
+  - Changed CTA wording to `"Start 3 Questions →"`.
+- **Unified Knowledge Diagnostic Container**:
+  - Replaced four separate heavily-bordered cards with a single unified diagnostic summary container featuring the aligned segmented distribution bar, four lightweight metric columns (`Strong 24`, `Developing 11`, `Uncertain 6`, `Needs attention 4`), and a clear psychometric distinction callout.
+- **Sidebar & Header Refinement**:
+  - Refined sidebar navigation active state from a bulky card into an understated item with a subtle left accent bar.
+  - Removed duplicate theme appearance toggle from the sidebar.
+  - Compacted top-right controls into consistent application-state controls (`Model calibrated`, `Research Mode: OFF/ON`, `Light/Dark`, user profile).
+
+---
+
 ## [v1.2.2] — 2026-10-07
 ### Backend Specification & Repository Completeness
 - **Backend Directory Infrastructure**:

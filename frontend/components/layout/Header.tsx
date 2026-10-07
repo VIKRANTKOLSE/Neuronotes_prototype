@@ -75,13 +75,42 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right section: Theme switcher + System telemetry + Profile */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Quick Theme Toggle Button */}
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Model Calibration Status */}
+        <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-mono ${
+          isLight 
+            ? 'bg-white text-slate-600 border-slate-200 shadow-sm' 
+            : 'bg-slate-900 text-slate-400 border-slate-800'
+        }`}>
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>Model calibrated</span>
+        </div>
+
+        {/* Research Mode control */}
+        <button
+          onClick={onToggleResearcherMode}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono border transition ${
+            researcherMode 
+              ? (isLight 
+                  ? 'bg-blue-50 text-blue-700 border-blue-200 font-medium shadow-sm' 
+                  : 'bg-blue-950/40 text-blue-300 border-blue-800')
+              : (isLight 
+                  ? 'bg-white text-slate-600 border-slate-200 hover:text-slate-900 shadow-sm' 
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200')
+          }`}
+          title="Toggle psychometric parameters (Fisher Info, Theta, SE)"
+        >
+          <Activity className={`w-3.5 h-3.5 ${researcherMode ? 'text-blue-600' : 'text-slate-400'}`} />
+          <span className="hidden sm:inline">Research Mode:</span>
+          <span className={researcherMode ? 'font-semibold' : ''}>{researcherMode ? 'ON' : 'OFF'}</span>
+        </button>
+
+        {/* Theme Toggle Button */}
         <button
           onClick={onToggleTheme}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border transition ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono border transition ${
             isLight 
-              ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200 shadow-sm' 
+              ? 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200 shadow-sm' 
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border-slate-800'
           }`}
           title="Toggle Light / Dark Mode"
@@ -89,59 +118,30 @@ export const Header: React.FC<HeaderProps> = ({
           {isLight ? (
             <>
               <Sun className="w-3.5 h-3.5 text-amber-500" />
-              <span className="hidden md:inline">Light Mode</span>
+              <span className="hidden md:inline">Light</span>
             </>
           ) : (
             <>
               <Moon className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden md:inline">Dark Mode</span>
+              <span className="hidden md:inline">Dark</span>
             </>
           )}
         </button>
-
-        {/* Research Mode quick indicator */}
-        <button
-          onClick={onToggleResearcherMode}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border transition ${
-            researcherMode 
-              ? (isLight 
-                  ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm font-semibold' 
-                  : 'bg-blue-600/20 text-blue-300 border-blue-500/40 shadow-sm')
-              : (isLight 
-                  ? 'bg-slate-100 text-slate-600 border-slate-200 hover:text-slate-900' 
-                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-300')
-          }`}
-          title="Toggle psychometric parameters (Fisher Info, Theta, SE)"
-        >
-          <Activity className="w-3.5 h-3.5 text-blue-500" />
-          <span className="hidden md:inline">Research Mode:</span>
-          <span>{researcherMode ? 'ON' : 'OFF'}</span>
-        </button>
-
-        {/* Diagnostic confidence health pill */}
-        <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-mono ${
-          isLight 
-            ? 'bg-slate-100 text-slate-700 border-slate-200' 
-            : 'bg-slate-900 text-slate-300 border-slate-800'
-        }`}>
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Calibrated</span>
-        </div>
 
         {/* Profile menu dropdown container */}
         <div className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            className={`flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg border transition ${
+            className={`flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-md border transition ${
               isLight 
-                ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800' 
+                ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 shadow-sm' 
                 : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-200'
             }`}
           >
-            <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-mono font-medium ${
+            <div className={`w-5 h-5 rounded border flex items-center justify-center text-[10px] font-mono font-medium ${
               isLight 
-                ? 'bg-blue-100 text-blue-700 border-blue-300' 
-                : 'bg-blue-600/20 text-blue-400 border-blue-500/40'
+                ? 'bg-slate-100 text-slate-700 border-slate-200' 
+                : 'bg-slate-800 text-slate-300 border-slate-700'
             }`}>
               VK
             </div>
