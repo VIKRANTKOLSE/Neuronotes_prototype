@@ -4,6 +4,26 @@ This file tracks all architectural, design, and implementation changes across th
 
 ---
 
+## [v1.4.0] — 2026-10-07
+### Node.js Express Psychometric Backend, Dual-User System, Past Tests & Notes
+- **Node.js Express + TypeScript Backend (`backend/`)**:
+  - Implemented full psychometric backend in `backend/` with Express and TypeScript running on port 8000.
+  - Built 2-Parameter Logistic (2PL) MIRT psychometric engine (`calculateItemResponseProbability`, `calculateFisherInformation`, `updateBayesianAbility`, `selectOptimalAdaptiveQuestion`).
+  - Added REST API routes: `/api/users`, `/api/concepts`, `/api/questions`, `/api/submissions`, `/api/tests`, `/api/notes`, `/api/misconceptions`, `/api/activities`.
+- **Dual-User Architecture**:
+  - **User 1 (Elena Rostova / `user-new`)**: Completely new learner profile with 0 tests taken, 0 notes, uncalibrated prior ($\theta = 0.00, \sigma = 1.20$), all 9 concepts in "insufficient evidence" state with mastery withheld.
+  - **User 2 (Vikrant Kolse / `user-history`)**: Longitudinal learner profile with 3 past tests, 5 diagnostic notes, 54 items administered, calibrated mastery (71%), and active misconception flags.
+  - Seamless profile switcher integrated in the frontend header profile menu and backend `X-User-Id` request context.
+- **Past Tests & Diagnostic Notes Subsystem**:
+  - Added `/tests` route with dedicated **Past Tests & Notes** screen in Next.js frontend (`frontend/components/tests/PastTestsView.tsx`).
+  - **Test History Inspector**: Item-by-item response comparison (student chosen vs. correct answer), duration latency, scientific rationale, and session-linked notes.
+  - **Diagnostic Notes Notebook**: Full-text search, concept filter, and create/edit/delete functionality for student study notes.
+  - Integrated quiz runner with "Save Session to Past Tests" workflow and inline diagnostic note creator.
+- **System Design Documentation**:
+  - Authored comprehensive [`design.md`](design.md) in the project root covering system architecture, psychometrics, entity relationship model, and REST API specification.
+
+---
+
 ## [v1.3.0] — 2026-10-07
 ### Dashboard Visual Hierarchy & Premium Design System Refinement
 - **Visual System & Aesthetic Overhaul (Linear / Vercel Diagnostic Aesthetic)**:

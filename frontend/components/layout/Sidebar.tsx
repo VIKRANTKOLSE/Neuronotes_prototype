@@ -13,7 +13,8 @@ import {
   ChevronRight, 
   BookOpen, 
   Sun, 
-  Moon 
+  Moon,
+  FileText
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -42,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { href: '/knowledge-map', label: 'Knowledge Map', icon: GitFork, description: 'Prerequisite DAG' },
     { href: '/progress', label: 'Progress', icon: BarChart3, description: 'Psychometric analytics' },
     { href: '/review', label: 'Review', icon: AlertCircle, description: 'Misconceptions & drills' },
+    { href: '/tests', label: 'Past Tests & Notes', icon: FileText, description: 'Test history & notes' },
   ];
 
   return (

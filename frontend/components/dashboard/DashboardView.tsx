@@ -16,6 +16,7 @@ import {
 import { Concept, MisconceptionItem, ActivityLog } from '@/types';
 import { MasteryBadge } from '@/components/mastery/MasteryBadge';
 import { useApp } from '@/components/layout/ClientLayout';
+import { api } from '@/services/api';
 
 interface DashboardViewProps {
   concepts: Concept[];
@@ -24,13 +25,38 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  concepts: _concepts,
-  misconceptions,
-  activities,
+  concepts: initialConcepts,
+  misconceptions: initialMisconceptions,
+  activities: initialActivities,
 }) => {
   const router = useRouter();
-  const { theme, researcherMode, openMisconception, setSelectedConceptId } = useApp();
+  const { theme, researcherMode, openMisconception, setSelectedConceptId, currentUser, userRefreshTrigger } = useApp();
   const isLight = theme === 'light';
+
+  const [concepts, setConcepts] = React.useState<Concept[]>(initialConcepts);
+  const [misconceptions, setMisconceptions] = React.useState<MisconceptionItem[]>(initialMisconceptions);
+  const [activities, setActivities] = React.useState<ActivityLog[]>(initialActivities);
+
+  React.useEffect(() => {
+    const refreshData = async () => {
+      try {
+        const [c, m, a] = await Promise.all([
+          api.getConcepts(),
+          api.getMisconceptions(),
+          api.getRecentActivities()
+        ]);
+        setConcepts(c);
+        setMisconceptions(m);
+        setActivities(a);
+      } catch (e) {
+        console.error('Failed to refresh dashboard data:', e);
+      }
+    };
+    refreshData();
+  }, [currentUser?.id, userRefreshTrigger]);
+
+  const isNew = currentUser?.isNewUser ?? false;
+  const firstName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Vikrant';
   const primaryMisconception = misconceptions[0];
 
   const handleInspectConcept = (conceptId: string) => {
@@ -55,14 +81,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             }`}>
               Physical & Electrochemistry
             </span>
+            {isNew && (
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                New Learner Profile
+              </span>
+            )}
           </div>
           <h2 className={`text-2xl font-semibold tracking-tight ${
             isLight ? 'text-slate-900' : 'text-slate-100'
           }`}>
-            Good evening, Vikrant
+            Good evening, {firstName}
           </h2>
           <p className={`text-xs max-w-xl leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-            Neuronotes has updated your psychometric model. Your next targeted actions are calculated to minimize posterior uncertainty and address emerging misconceptions.
+            {isNew 
+              ? 'Welcome to Neuronotes. Complete your initial baseline diagnostic session to establish calibrated ability estimates across the prerequisite DAG.'
+              : 'Neuronotes has updated your psychometric model. Your next targeted actions are calculated to minimize posterior uncertainty and address emerging misconceptions.'}
           </p>
         </div>
 
@@ -74,20 +107,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         }`}>
           <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 uppercase tracking-wider mb-1">
             <span>Estimated Mastery</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500" title="Model state active" />
+            <span className={`w-2 h-2 rounded-full ${isNew ? 'bg-amber-500' : 'bg-emerald-500'}`} title="Model status" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className={`text-3xl font-semibold tabular-nums tracking-tight ${
               isLight ? 'text-slate-900' : 'text-slate-100'
             }`}>
-              71%
+              {isNew ? 'Withheld' : `${currentUser?.overallMastery ?? 71}%`}
             </span>
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              Calibrated
+            <span className={`text-xs font-medium ${
+              isNew ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+            }`}>
+              {isNew ? 'Baseline' : 'Calibrated'}
             </span>
           </div>
           <p className="text-[11px] font-mono text-slate-500 mt-1">
-            45 active concepts • 89% reliability
+            {isNew 
+              ? '9 concepts unprobed • Prior σ = 1.20'
+              : `${currentUser?.itemsAnswered ?? 54} items • ${currentUser?.reliabilityScore ?? 89}% reliability`}
           </p>
         </div>
       </section>
@@ -118,7 +155,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   : 'bg-purple-950/40 text-purple-300 border-purple-800'
               }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-                63% posterior uncertainty
+                {isNew ? '95% prior uncertainty' : '63% posterior uncertainty'}
               </span>
 
               <span className="text-xs font-mono text-slate-400 hidden sm:inline ml-auto">
@@ -131,25 +168,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h3 className={`text-xl lg:text-2xl font-semibold tracking-tight ${
                 isLight ? 'text-slate-900' : 'text-slate-100'
               }`}>
-                Gibbs Energy (ΔG)
+                {isNew ? 'Thermodynamics Foundations' : 'Gibbs Energy (ΔG)'}
               </h3>
               <p className={`text-xs lg:text-sm mt-1.5 leading-relaxed ${
                 isLight ? 'text-slate-600' : 'text-slate-300'
               }`}>
-                Your current estimate for Gibbs Energy has high posterior uncertainty (63% variance). Probing this concept is required before downstream evaluation of dependent concepts.
+                {isNew
+                  ? 'As a new learner, your knowledge graph is uncalibrated. Administering foundational state function diagnostic items establishes your initial latent ability θ and gates downstream concepts.'
+                  : 'Your current estimate for Gibbs Energy has high posterior uncertainty (63% variance). Probing this concept is required before downstream evaluation of dependent concepts.'}
               </p>
             </div>
 
             {/* Graph Prerequisite Dependency Context */}
             <div className={`p-2.5 rounded-lg border text-xs font-mono flex items-center gap-2 ${
-              isLight 
-                ? 'bg-slate-50 border-slate-200 text-slate-700' 
-                : 'bg-slate-950/60 border-slate-800 text-slate-300'
+              isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-300'
             }`}>
-              <span className="text-slate-400">Prerequisite gate for:</span>
-              <span className="font-semibold text-blue-600 dark:text-blue-400">Cell Potential</span>
-              <span className="text-slate-400">•</span>
-              <span className="font-semibold text-blue-600 dark:text-blue-400">Equilibrium Constant</span>
+              <span className="text-slate-400">Dependency:</span>
+              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                {isNew ? 'Root Concept (Level 1)' : 'Gibbs Energy'}
+              </span>
+              <span>→ Gates:</span>
+              <span className="text-slate-600 dark:text-slate-400">
+                {isNew ? 'Enthalpy (ΔH) & Entropy (ΔS)' : 'Cell Potential & Equilibrium Constant'}
+              </span>
             </div>
 
             {/* Useful Action Metadata */}
@@ -236,16 +277,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Domain: Physical & Electrochemistry
             </span>
             <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>
-              Reliability Index: 89%
+              Reliability Index: {isNew ? '12% (Sparse baseline)' : '89% (Calibrated)'}
             </span>
           </div>
 
           {/* Segmented Distribution Bar */}
           <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
-            <div style={{ width: '53.3%' }} className="bg-emerald-500 transition-opacity" title="Strong: 24 concepts (53%)" />
-            <div style={{ width: '24.4%' }} className="bg-amber-500 transition-opacity" title="Developing: 11 concepts (24%)" />
-            <div style={{ width: '13.3%' }} className="bg-purple-500 transition-opacity" title="Uncertain: 6 concepts (13%)" />
-            <div style={{ width: '8.9%' }} className="bg-rose-500 transition-opacity" title="Needs attention: 4 concepts (9%)" />
+            {isNew ? (
+              <div style={{ width: '100%' }} className="bg-slate-400 dark:bg-slate-600 transition-opacity" title="Insufficient Evidence: 9 concepts (100%)" />
+            ) : (
+              <>
+                <div style={{ width: '53.3%' }} className="bg-emerald-500 transition-opacity" title="Strong: 24 concepts (53%)" />
+                <div style={{ width: '24.4%' }} className="bg-amber-500 transition-opacity" title="Developing: 11 concepts (24%)" />
+                <div style={{ width: '13.3%' }} className="bg-purple-500 transition-opacity" title="Uncertain: 6 concepts (13%)" />
+                <div style={{ width: '8.9%' }} className="bg-rose-500 transition-opacity" title="Needs attention: 4 concepts (9%)" />
+              </>
+            )}
           </div>
 
           {/* 4 Lightweight Metric Columns */}
@@ -257,9 +304,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Strong</span>
               </div>
               <p className={`text-2xl font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                24 <span className="text-xs font-normal text-slate-500">concepts</span>
+                {isNew ? 0 : 24} <span className="text-xs font-normal text-slate-500">concepts</span>
               </p>
-              <p className="text-[11px] text-slate-500">High mastery, narrow posterior</p>
+              <p className="text-[11px] text-slate-500">{isNew ? 'No observations yet' : 'High mastery, narrow posterior'}</p>
             </div>
 
             {/* Developing */}
@@ -269,9 +316,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Developing</span>
               </div>
               <p className={`text-2xl font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                11 <span className="text-xs font-normal text-slate-500">concepts</span>
+                {isNew ? 0 : 11} <span className="text-xs font-normal text-slate-500">concepts</span>
               </p>
-              <p className="text-[11px] text-slate-500">Moderate ability, consolidating</p>
+              <p className="text-[11px] text-slate-500">{isNew ? 'Awaiting test items' : 'Moderate ability, consolidating'}</p>
             </div>
 
             {/* Uncertain */}
@@ -281,21 +328,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Uncertain</span>
               </div>
               <p className={`text-2xl font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                6 <span className="text-xs font-normal text-slate-500">concepts</span>
+                {isNew ? 0 : 6} <span className="text-xs font-normal text-slate-500">concepts</span>
               </p>
-              <p className="text-[11px] text-slate-500">Needs probing observations</p>
+              <p className="text-[11px] text-slate-500">{isNew ? 'Prior unprobed' : 'Needs probing observations'}</p>
             </div>
 
             {/* Needs Attention */}
             <div className="p-3 md:px-4 md:py-1 space-y-1">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Needs attention</span>
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{isNew ? 'Insufficient' : 'Needs attention'}</span>
               </div>
               <p className={`text-2xl font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                4 <span className="text-xs font-normal text-slate-500">concepts</span>
+                {isNew ? 9 : 4} <span className="text-xs font-normal text-slate-500">concepts</span>
               </p>
-              <p className="text-[11px] text-slate-500">Diagnosed conceptual gap</p>
+              <p className="text-[11px] text-slate-500">{isNew ? 'Withheld pending diagnostic' : 'Diagnosed conceptual gap'}</p>
             </div>
           </div>
 
@@ -339,56 +386,68 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               href="/review"
               className="text-xs font-mono text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
             >
-              <span>View all (3)</span>
+              <span>View all ({misconceptions.length})</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {primaryMisconception && (
-            <div className={`p-3.5 rounded-lg border space-y-2.5 ${
-              isLight 
-                ? 'bg-amber-50/40 border-amber-200' 
-                : 'bg-amber-950/20 border-amber-900/40'
+          {misconceptions.length === 0 ? (
+            <div className={`p-5 rounded-lg border text-center ${
+              isLight ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-slate-800/40 border-slate-700/60 text-slate-400'
             }`}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-amber-800 dark:text-amber-300 font-medium">
-                  {primaryMisconception.conceptName}
-                </span>
-                <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
-                  isLight 
-                    ? 'bg-amber-100 text-amber-800 border-amber-300' 
-                    : 'bg-amber-900/40 text-amber-200 border-amber-800'
-                }`}>
-                  Confidence: {primaryMisconception.confidence}
-                </span>
-              </div>
-
-              <p className={`text-xs font-medium ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                &ldquo;{primaryMisconception.title}&rdquo;
+              <CheckCircle2 className="w-6 h-6 mx-auto mb-1.5 text-emerald-500" />
+              <p className="text-xs font-medium">No Misconception Patterns Flagged</p>
+              <p className="text-[11px] mt-0.5 opacity-80">
+                {isNew ? 'Initial baseline is clean. Bayesian pattern detector active.' : 'All conceptual models operating normally.'}
               </p>
-
-              <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
-                {primaryMisconception.statement}
-              </p>
-
-              <div className={`pt-2 border-t flex items-center justify-between ${
-                isLight ? 'border-amber-200/80' : 'border-amber-900/40'
-              }`}>
-                <span className={`text-xs font-mono ${isLight ? 'text-amber-800' : 'text-amber-300/80'}`}>
-                  Evidence: {primaryMisconception.evidence}
-                </span>
-                <button
-                  onClick={() => openMisconception(primaryMisconception)}
-                  className={`px-2.5 py-1 rounded-md font-mono text-xs font-medium border transition ${
-                    isLight 
-                      ? 'bg-white hover:bg-amber-50 text-amber-900 border-amber-300 shadow-sm' 
-                      : 'bg-amber-900/30 hover:bg-amber-900/50 text-amber-200 border-amber-800'
-                  }`}
-                >
-                  Review
-                </button>
-              </div>
             </div>
+          ) : (
+            primaryMisconception && (
+              <div className={`p-3.5 rounded-lg border space-y-2.5 ${
+                isLight 
+                  ? 'bg-amber-50/40 border-amber-200' 
+                  : 'bg-amber-950/20 border-amber-900/40'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-amber-800 dark:text-amber-300 font-medium">
+                    {primaryMisconception.conceptName}
+                  </span>
+                  <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
+                    isLight 
+                      ? 'bg-amber-100 text-amber-800 border-amber-300' 
+                      : 'bg-amber-900/40 text-amber-200 border-amber-800'
+                  }`}>
+                    Confidence: {primaryMisconception.confidence}
+                  </span>
+                </div>
+
+                <p className={`text-xs font-medium ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                  &ldquo;{primaryMisconception.title}&rdquo;
+                </p>
+
+                <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                  {primaryMisconception.statement}
+                </p>
+
+                <div className={`pt-2 border-t flex items-center justify-between ${
+                  isLight ? 'border-amber-200/80' : 'border-amber-900/40'
+                }`}>
+                  <span className={`text-xs font-mono ${isLight ? 'text-amber-800' : 'text-amber-300/80'}`}>
+                    Evidence: {primaryMisconception.evidence}
+                  </span>
+                  <button
+                    onClick={() => openMisconception(primaryMisconception)}
+                    className={`px-2.5 py-1 rounded-md font-mono text-xs font-medium border transition ${
+                      isLight 
+                        ? 'bg-white hover:bg-amber-50 text-amber-900 border-amber-300 shadow-sm' 
+                        : 'bg-amber-900/30 hover:bg-amber-900/50 text-amber-200 border-amber-800'
+                    }`}
+                  >
+                    Review
+                  </button>
+                </div>
+              </div>
+            )
           )}
 
           <div className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${

@@ -1,0 +1,255 @@
+import { Question } from '../types/index.js';
+
+export const QUESTIONS_DATABASE: Question[] = [
+  {
+    id: 'q-gibbs-cell-01',
+    conceptId: 'gibbs-04',
+    conceptName: 'Gibbs Energy (ΔG)',
+    subject: 'Electrochemistry & Thermodynamics',
+    stem: 'Based on the following standard galvanic cell notation and standard reduction potentials at 298 K:\n\nZn(s) | Zn²⁺(aq, 1.0 M) || Cu²⁺(aq, 1.0 M) | Cu(s)\n\nGiven E°(Zn²⁺/Zn) = -0.76 V and E°(Cu²⁺/Cu) = +0.34 V, what is the standard Gibbs free energy change (ΔG°) for the spontaneous cell reaction, and what does its sign imply?',
+    contextNotation: 'Zn(s) | Zn²⁺(1.0 M) || Cu²⁺(1.0 M) | Cu(s)  •  F ≈ 96,485 C/mol  •  n = 2',
+    options: [
+      {
+        id: 'opt-a',
+        label: 'A',
+        text: 'ΔG° = -212.3 kJ/mol; negative sign indicates the cell reaction is thermodynamically spontaneous under standard conditions.',
+      },
+      {
+        id: 'opt-b',
+        label: 'B',
+        text: 'ΔG° = +212.3 kJ/mol; positive sign indicates work is done by the system on the surroundings during spontaneous discharge.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Cell potential and Gibbs free energy may be getting conflated. ΔG° is inversely related to E°cell via ΔG° = -nFE°cell.',
+      },
+      {
+        id: 'opt-c',
+        label: 'C',
+        text: 'ΔG° = -106.1 kJ/mol; because standard potentials are intensive, n is omitted from the energetic conversion.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Omission of n indicates confusion between intensive potential (Volts = J/C) and extensive thermodynamic free energy (Joules).',
+      },
+      {
+        id: 'opt-d',
+        label: 'D',
+        text: 'ΔG° = 0 kJ/mol; standard cell notation implies the system is at dynamic equilibrium at 1.0 M concentrations.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Equilibrium corresponds to non-standard E = 0 and ΔG = 0, not standard conditions where Q = 1.',
+      }
+    ],
+    correctOptionId: 'opt-a',
+    explanation: 'For the standard cell reaction Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s), the standard cell potential is E°cell = E°(cathode) - E°(anode) = +0.34 V - (-0.76 V) = +1.10 V. The relationship to standard Gibbs free energy is ΔG° = -nFE°cell. With n = 2 mol e⁻, ΔG° = -2 × 96,485 C/mol × 1.10 J/C = -212,267 J/mol ≈ -212.3 kJ/mol. A negative ΔG° confirms thermodynamic spontaneity.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Your current estimate for Gibbs Energy is uncertain (confidence: 63%, posterior variance elevated).',
+      recentDifficultyReason: 'You recently showed difficulty connecting thermodynamic state functions to electrochemical work.',
+      prerequisiteReason: 'Gibbs Energy is a direct prerequisite for the downstream concept Cell Potential (E°cell) being studied.',
+      informationGainReason: 'This item maximizes Fisher Information I(θ = -0.22) = 1.48, providing maximum diagnostic discrimination.',
+      fisherInformation: 1.48,
+      estimatedTheta: -0.22,
+      standardError: 0.38,
+      itemDiscrimination: 1.82,
+      itemDifficulty: -0.15,
+      prerequisiteCoverageIndex: 0.89,
+      utilityScore: 0.94,
+    }
+  },
+  {
+    id: 'q-nernst-02',
+    conceptId: 'nernst-08',
+    conceptName: 'Nernst Equation',
+    subject: 'Physical Chemistry',
+    stem: 'Consider a concentration cell operated at 298 K with copper electrodes: Cu(s) | Cu²⁺(aq, 0.0010 M) || Cu²⁺(aq, 1.0 M) | Cu(s). How does the cell potential change as the reaction approaches equilibrium?',
+    contextNotation: 'E = E° - (0.0592 / n) log(Q)  •  E° = 0.00 V for identical half-cells',
+    options: [
+      {
+        id: 'opt-a',
+        label: 'A',
+        text: 'Initial E is positive (+0.089 V) and decreases continuously toward 0.00 V as Cu²⁺ concentrations equalize.',
+      },
+      {
+        id: 'opt-b',
+        label: 'B',
+        text: 'Initial E is 0.00 V because identical chemical species have zero net electrochemical driving force.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Confusing standard potential E° (which is 0) with non-standard potential E driven by the entropic gradient of concentration.',
+      },
+      {
+        id: 'opt-c',
+        label: 'C',
+        text: 'Initial E is negative (-0.089 V) because the anode compartment has lower ionic activity than standard state.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Inversion of the reaction quotient Q = [Cu²⁺_dilute] / [Cu²⁺_conc] in the Nernst logarithm.',
+      },
+      {
+        id: 'opt-d',
+        label: 'D',
+        text: 'Initial E remains invariant until the copper anode electrode is completely dissolved.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-a',
+    explanation: 'In a concentration cell, E° = 0. The anode reaction generates Cu²⁺ in the dilute compartment (0.001 M), and cathode plates out Cu²⁺ from the concentrated compartment (1.0 M). Q = [Cu²⁺_dilute] / [Cu²⁺_conc] = 10⁻³. E = 0 - (0.0592/2) log(10⁻³) = -0.0296 × (-3) = +0.0888 V. As current flows, Q increases to 1, causing E to approach 0 V at equilibrium.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Identifies whether low performance on Nernst is caused by Q inversion vs lack of conceptual grasp.',
+      recentDifficultyReason: 'Confirmed low ability estimate (28% mastery) requires targeted diagnostic isolation.',
+      prerequisiteReason: 'Tests mastery of reaction quotient integration with cell potential.',
+      informationGainReason: 'High discriminatory power (a = 2.1) between sign inversion misconceptions and conceptual gaps.',
+      fisherInformation: 1.62,
+      estimatedTheta: -0.85,
+      standardError: 0.29,
+      itemDiscrimination: 2.10,
+      itemDifficulty: -0.70,
+      prerequisiteCoverageIndex: 0.95,
+      utilityScore: 0.91,
+    }
+  },
+  {
+    id: 'q-cellpot-03',
+    conceptId: 'cell-pot-05',
+    conceptName: 'Cell Potential (E°cell)',
+    subject: 'Electrochemistry',
+    stem: 'When balancing a redox equation for a galvanic cell, a student multiplies the anode half-reaction by 2 to balance transferred electrons. How does this factor affect the standard reduction potential of that half-reaction?',
+    contextNotation: 'E° is an intensive thermodynamic quantity (Joules per Coulomb).',
+    options: [
+      {
+        id: 'opt-a',
+        label: 'A',
+        text: 'E° remains strictly unchanged because electric potential is an intensive property that does not scale with quantity of substance.',
+      },
+      {
+        id: 'opt-b',
+        label: 'B',
+        text: 'E° must be multiplied by 2 because twice the number of electrons are flowing through the circuit.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Conflates intensive electrical potential (Volts = J/C) with extensive free energy (ΔG = -nFE).',
+      },
+      {
+        id: 'opt-c',
+        label: 'C',
+        text: 'E° is squared because equilibrium constants scale exponentially with reaction coefficients.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Confusing potential addition with equilibrium constant manipulation.',
+      },
+      {
+        id: 'opt-d',
+        label: 'D',
+        text: 'E° changes sign to preserve conservation of charge across the membrane.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-a',
+    explanation: 'Standard reduction potential E° is an intensive property (defined as energy per unit charge, 1 V = 1 J/C). Multiplying half-reaction coefficients multiplies both the free energy change (ΔG) and the moles of electrons transferred (n) by the same factor, leaving the ratio E° = -ΔG / (nF) unchanged.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Probes the intensive vs. extensive property boundary in electrochemical potentials.',
+      recentDifficultyReason: 'Common misconception trigger for stoichiometric coefficient manipulation in redox systems.',
+      prerequisiteReason: 'Foundational requirement for properly calculating E°cell from half-cell tables.',
+      informationGainReason: 'High diagnostic discrimination for students confusing Gibbs energy with potential.',
+      fisherInformation: 1.55,
+      estimatedTheta: 0.25,
+      standardError: 0.32,
+      itemDiscrimination: 1.95,
+      itemDifficulty: 0.10,
+      prerequisiteCoverageIndex: 0.92,
+      utilityScore: 0.88,
+    }
+  },
+  {
+    id: 'q-thermo-04',
+    conceptId: 'thermo-01',
+    conceptName: 'Thermodynamics Foundations',
+    subject: 'Physical Chemistry',
+    stem: 'Which statement correctly characterizes a state function in classical chemical thermodynamics?',
+    contextNotation: 'First Law: ΔU = q + w  •  Path vs State Functions',
+    options: [
+      {
+        id: 'opt-a',
+        label: 'A',
+        text: 'Its change depends solely on the initial and final states of the system, irrespective of the transformation pathway taken.',
+      },
+      {
+        id: 'opt-b',
+        label: 'B',
+        text: 'Its value depends directly on whether heat transfer occurs reversibly or irreversibly during the process.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Heat (q) is a path function, not a state function.',
+      },
+      {
+        id: 'opt-c',
+        label: 'C',
+        text: 'Work (w) is a quintessential state function because mechanical energy is conserved in isolated systems.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Work (w) is a path-dependent quantity.',
+      },
+      {
+        id: 'opt-d',
+        label: 'D',
+        text: 'State functions can only be defined for ideal gases undergoing isothermal expansions.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-a',
+    explanation: 'A state function (such as U, H, S, G) has values determined uniquely by the present thermodynamic state of the system (T, P, V, composition). The integral over any cyclic process is identically zero: ∮ dX = 0.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Baseline calibration item for first-law thermodynamics competency.',
+      recentDifficultyReason: 'Foundational anchor for subsequent thermochemical concepts.',
+      prerequisiteReason: 'Prerequisite for Enthalpy and Entropy understanding.',
+      informationGainReason: 'High reliability item for initial learner baseline estimation.',
+      fisherInformation: 1.35,
+      estimatedTheta: -0.50,
+      standardError: 0.35,
+      itemDiscrimination: 1.60,
+      itemDifficulty: -0.65,
+      prerequisiteCoverageIndex: 1.00,
+      utilityScore: 0.82,
+    }
+  },
+  {
+    id: 'q-eqconst-05',
+    conceptId: 'eq-const-07',
+    conceptName: 'Equilibrium Constant (K)',
+    subject: 'Chemical Equilibria',
+    stem: 'At 298 K, a biochemical reaction has standard Gibbs free energy change ΔG° = +17.1 kJ/mol. What is the value of the thermodynamic equilibrium constant K, and what does this imply about product formation at equilibrium?',
+    contextNotation: 'ΔG° = -RT ln(K)  •  R = 8.314 J/(mol·K)  •  T = 298 K  •  RT ≈ 2.478 kJ/mol',
+    options: [
+      {
+        id: 'opt-a',
+        label: 'A',
+        text: 'K ≈ 1.0 × 10⁻³; reactants are strongly favored at equilibrium because ΔG° is positive.',
+      },
+      {
+        id: 'opt-b',
+        label: 'B',
+        text: 'K ≈ 1.0 × 10³; products are strongly favored at equilibrium because positive free energy indicates high stored product potential.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Sign error in ln(K) = -ΔG° / RT leading to inverted equilibrium ratio.',
+      },
+      {
+        id: 'opt-c',
+        label: 'C',
+        text: 'K = 0; reactions with positive ΔG° cannot proceed under any experimental conditions.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Endorgonic reactions still reach equilibrium with K > 0 and can be driven by coupling or le Chatelier shifts.',
+      },
+      {
+        id: 'opt-d',
+        label: 'D',
+        text: 'K = 1.0; because standard state concentrations are defined as unity (1 M).',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-a',
+    explanation: 'From ΔG° = -RT ln(K), we have ln(K) = -ΔG° / (RT) = -(17,100 J/mol) / (8.314 J/(mol·K) × 298 K) = -6.90. Thus K = e^(-6.90) ≈ 1.0 × 10⁻³. Since K << 1, the equilibrium heavily favors reactants under standard state conditions.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Evaluates algebraic proficiency with exponential thermodynamic relations.',
+      recentDifficultyReason: 'Common point of confusion regarding signs and magnitude of equilibrium constant.',
+      prerequisiteReason: 'Direct coupling between equilibrium chemistry and electrochemical Nernst equation.',
+      informationGainReason: 'Discriminates between calculation errors and conceptual misunderstanding of spontaneity.',
+      fisherInformation: 1.42,
+      estimatedTheta: 0.15,
+      standardError: 0.33,
+      itemDiscrimination: 1.75,
+      itemDifficulty: 0.20,
+      prerequisiteCoverageIndex: 0.88,
+      utilityScore: 0.86,
+    }
+  }
+];

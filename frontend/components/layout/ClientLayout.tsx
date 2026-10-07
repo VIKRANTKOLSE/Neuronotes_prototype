@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MisconceptionModal } from '@/components/modals/MisconceptionModal';
-import { MisconceptionItem } from '@/types';
+import { MisconceptionItem, UserProfile } from '@/types';
+import { api } from '@/services/api';
 
 interface AppContextType {
   theme: 'dark' | 'light';
@@ -18,6 +19,10 @@ interface AppContextType {
   selectedConceptId: string | null;
   setSelectedConceptId: (id: string | null) => void;
   startTargetedDrill: (item: MisconceptionItem) => void;
+  currentUser: UserProfile | null;
+  allUsers: UserProfile[];
+  switchUser: (userId: string) => Promise<void>;
+  userRefreshTrigger: number;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -42,6 +47,9 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const [activeMisconception, setActiveMisconception] = useState<MisconceptionItem | null>(null);
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [userRefreshTrigger, setUserRefreshTrigger] = useState<number>(0);
 
   useEffect(() => {
     const saved = localStorage.getItem('neuronotes-theme');
@@ -50,6 +58,25 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
     }
     setMounted(true);
   }, []);
+
+  // Fetch users on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await api.getUsers();
+        setAllUsers(users);
+        const activeId = api.getCurrentUserId();
+        const found = users.find(u => u.id === activeId) || users[1] || users[0];
+        if (found) {
+          setCurrentUser(found);
+          api.setCurrentUserId(found.id);
+        }
+      } catch (err) {
+        console.error('Failed to load users:', err);
+      }
+    };
+    fetchUsers();
+  }, [userRefreshTrigger]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -84,6 +111,15 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
     router.push(`/quiz?conceptId=${encodeURIComponent(item.conceptId)}`);
   };
 
+  const switchUser = async (userId: string) => {
+    await api.switchUser(userId);
+    const target = allUsers.find(u => u.id === userId);
+    if (target) {
+      setCurrentUser(target);
+    }
+    setUserRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -97,6 +133,10 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
         selectedConceptId,
         setSelectedConceptId,
         startTargetedDrill,
+        currentUser,
+        allUsers,
+        switchUser,
+        userRefreshTrigger,
       }}
     >
       <div className={`min-h-screen transition-colors font-sans selection:bg-blue-600/30 selection:text-blue-200 ${

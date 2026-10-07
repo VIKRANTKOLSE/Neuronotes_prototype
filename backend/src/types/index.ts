@@ -17,10 +17,10 @@ export interface Concept {
   subject: string;
   domain: string;
   estimatedMastery: number; // 0-100
-  confidenceScore: number;  // 0-100 (statistical confidence / 1 - variance)
+  confidenceScore: number;  // 0-100 (1 - variance)
   status: MasteryStatus;
-  prerequisites: string[];  // IDs of prerequisite concepts
-  dependents: string[];     // IDs of downstream concepts
+  prerequisites: string[];  // Parent IDs in DAG
+  dependents: string[];     // Child IDs in DAG
   totalResponses: number;
   correctResponses: number;
   incorrectResponses: number;
@@ -34,7 +34,7 @@ export interface Concept {
   };
   recommendedAction: string;
   position: { x: number; y: number };
-  level: number; // 1 to 6 depth in DAG
+  level: number;
 }
 
 export interface QuestionOption {
@@ -98,6 +98,7 @@ export interface SubmissionPayload {
   questionId: string;
   selectedOptionId: string;
   latencySeconds: number;
+  userId?: string;
 }
 
 export interface SubmissionResult {
@@ -112,21 +113,6 @@ export interface SubmissionResult {
     newTheta: number;
     standardErrorDelta: number;
   };
-}
-
-export interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  major: string;
-  avatarInitials: string;
-  isNewUser: boolean;
-  overallMastery: number;
-  estimatedTheta: number;
-  standardError: number;
-  itemsAnswered: number;
-  reliabilityScore: number;
-  statusSummary: string;
 }
 
 export interface TestNote {
@@ -168,7 +154,7 @@ export interface PastTestSession {
   title: string;
   timestamp: string;
   durationSeconds: number;
-  score: number;
+  score: number; // percentage (0-100)
   correctCount: number;
   totalQuestions: number;
   topicsTested: string[];
@@ -176,6 +162,21 @@ export interface PastTestSession {
   thetaEnd: number;
   questions: PastTestQuestionReview[];
   notes: TestNote[];
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  major: string;
+  avatarInitials: string;
+  isNewUser: boolean;
+  overallMastery: number; // 0-100
+  estimatedTheta: number;
+  standardError: number;
+  itemsAnswered: number;
+  reliabilityScore: number; // percentage
+  statusSummary: string;
 }
 
 export interface FullUserData extends UserProfile {

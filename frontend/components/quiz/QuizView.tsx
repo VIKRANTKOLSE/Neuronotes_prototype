@@ -15,7 +15,7 @@ import {
   AlertTriangle,
   FlaskConical
 } from 'lucide-react';
-import { Question, SubmissionResult } from '@/types';
+import { Question, SubmissionResult, PastTestQuestionReview } from '@/types';
 import { useApp } from '@/components/layout/ClientLayout';
 import { api } from '@/services/api';
 import { QUESTIONS_POOL } from '@/lib/mockData';
@@ -28,18 +28,25 @@ export const QuizView: React.FC<QuizViewProps> = ({
   initialQuestion = QUESTIONS_POOL[0],
 }) => {
   const router = useRouter();
-  const { theme, researcherMode, toggleResearcherMode, openMisconception } = useApp();
+  const { theme, researcherMode, toggleResearcherMode, openMisconception, currentUser } = useApp();
   const isLight = theme === 'light';
 
-  const [questionIndex, setQuestionIndex] = useState<number>(7);
-  const [totalQuestions] = useState<number>(12);
+  const [questionIndex, setQuestionIndex] = useState<number>(1);
+  const [totalQuestions] = useState<number>(5);
   const [currentQuestion, setCurrentQuestion] = useState<Question>(initialQuestion);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
   const [showWhyQuestion, setShowWhyQuestion] = useState<boolean>(false);
-  const [secondsElapsed, setSecondsElapsed] = useState<number>(42);
+  const [secondsElapsed, setSecondsElapsed] = useState<number>(0);
+
+  // Completed items in this session
+  const [sessionReviews, setSessionReviews] = useState<PastTestQuestionReview[]>([]);
+  const [finishModalOpen, setFinishModalOpen] = useState<boolean>(false);
+  const [sessionNoteTitle, setSessionNoteTitle] = useState<string>('');
+  const [sessionNoteContent, setSessionNoteContent] = useState<string>('');
+  const [isSavingTest, setIsSavingTest] = useState<boolean>(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -63,8 +70,10 @@ export const QuizView: React.FC<QuizViewProps> = ({
     if (!selectedOptionId || isSubmitted) return;
     setIsLoading(true);
 
+    const chosenOption = currentQuestion.options.find((o) => o.id === selectedOptionId);
+    const correctOpt = currentQuestion.options.find((o) => o.id === currentQuestion.correctOptionId);
+
     try {
-      // Call FastAPI backend submission service
       const result = await api.submitAnswer({
         questionId: currentQuestion.id,
         selectedOptionId,
@@ -73,19 +82,98 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
       setSubmissionResult(result);
       setIsSubmitted(true);
+
+      const review: PastTestQuestionReview = {
+        questionId: currentQuestion.id,
+        conceptId: currentQuestion.conceptId,
+        conceptName: currentQuestion.conceptName,
+        stem: currentQuestion.stem,
+        contextNotation: currentQuestion.contextNotation,
+        selectedOptionId,
+        selectedOptionText: chosenOption?.text || '',
+        correctOptionId: currentQuestion.correctOptionId,
+        correctOptionText: correctOpt?.text || '',
+        isCorrect: result.isCorrect,
+        explanation: result.explanation || currentQuestion.explanation,
+        latencySeconds: secondsElapsed,
+        psychometricDelta: result.thetaUpdate ? {
+          priorTheta: result.thetaUpdate.priorTheta,
+          newTheta: result.thetaUpdate.newTheta,
+          delta: parseFloat((result.thetaUpdate.newTheta - result.thetaUpdate.priorTheta).toFixed(2))
+        } : undefined
+      };
+      setSessionReviews((prev) => [...prev, review]);
     } catch {
-      // Fallback local calculation
       const isCorrect = selectedOptionId === currentQuestion.correctOptionId;
-      setSubmissionResult({
+      const fallbackResult = {
         isCorrect,
         explanation: currentQuestion.explanation,
         conceptTested: currentQuestion.conceptName,
         newEstimatedMastery: isCorrect ? 82 : 68,
         nextQuestionConcept: 'Gibbs Energy (ΔG)',
-      });
+      };
+      setSubmissionResult(fallbackResult);
       setIsSubmitted(true);
+
+      const review: PastTestQuestionReview = {
+        questionId: currentQuestion.id,
+        conceptId: currentQuestion.conceptId,
+        conceptName: currentQuestion.conceptName,
+        stem: currentQuestion.stem,
+        contextNotation: currentQuestion.contextNotation,
+        selectedOptionId,
+        selectedOptionText: chosenOption?.text || '',
+        correctOptionId: currentQuestion.correctOptionId,
+        correctOptionText: correctOpt?.text || '',
+        isCorrect,
+        explanation: currentQuestion.explanation,
+        latencySeconds: secondsElapsed,
+      };
+      setSessionReviews((prev) => [...prev, review]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFinishAndSaveTest = async () => {
+    if (sessionReviews.length === 0) return;
+    setIsSavingTest(true);
+
+    const correctCount = sessionReviews.filter((r) => r.isCorrect).length;
+    const score = Math.round((correctCount / sessionReviews.length) * 100);
+    const topicsTested = Array.from(new Set(sessionReviews.map((r) => r.conceptName)));
+
+    const testPayload = {
+      title: `Adaptive Diagnostic: ${topicsTested.join(', ')}`,
+      durationSeconds: secondsElapsed,
+      score,
+      correctCount,
+      totalQuestions: sessionReviews.length,
+      topicsTested,
+      thetaStart: currentUser?.estimatedTheta || 0.0,
+      thetaEnd: (currentUser?.estimatedTheta || 0.0) + (score >= 60 ? 0.15 : -0.1),
+      questions: sessionReviews,
+      notes: sessionNoteTitle.trim() ? [{
+        id: `note-auto-${Date.now().toString(36)}`,
+        userId: currentUser?.id || 'user-history',
+        title: sessionNoteTitle.trim(),
+        content: sessionNoteContent.trim() || 'Key takeaways from adaptive session.',
+        conceptName: topicsTested[0] || 'General Chemistry',
+        tags: ['Adaptive Test Note', 'Review'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }] : []
+    };
+
+    try {
+      await api.recordTest(testPayload);
+      setFinishModalOpen(false);
+      router.push('/tests');
+    } catch (err) {
+      console.error('Failed to record test session:', err);
+      router.push('/tests');
+    } finally {
+      setIsSavingTest(false);
     }
   };
 
@@ -390,8 +478,8 @@ export const QuizView: React.FC<QuizViewProps> = ({
               </div>
             )}
 
-            {/* NEXT QUESTION PROCEED BUTTON */}
-            <div className="flex items-center justify-between pt-2">
+            {/* NEXT QUESTION & FINISH TEST ACTION BUTTONS */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
               <button
                 onClick={handleReset}
                 className={`px-3 py-2 text-xs font-mono flex items-center gap-1.5 ${
@@ -402,17 +490,124 @@ export const QuizView: React.FC<QuizViewProps> = ({
                 <span>Try Option Re-selection (Simulation)</span>
               </button>
 
-              <button
-                onClick={handleNextQuestion}
-                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm font-mono transition shadow-lg shadow-blue-600/30 flex items-center gap-2"
-              >
-                <span>Proceed to Next Question</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                {sessionReviews.length > 0 && (
+                  <button
+                    onClick={() => setFinishModalOpen(true)}
+                    className={`px-4 py-2.5 rounded-xl border text-xs font-mono font-medium transition flex items-center gap-2 ${
+                      isLight 
+                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    }`}
+                  >
+                    <span>Save to Past Tests ({sessionReviews.length})</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handleNextQuestion}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs font-mono transition shadow-md shadow-blue-600/30 flex items-center gap-2"
+                >
+                  <span>Proceed to Next Question</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* FINISH SESSION & SAVE MODAL */}
+      {finishModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`w-full max-w-lg rounded-2xl border p-6 space-y-4 shadow-2xl transition ${
+            isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-slate-100'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-semibold">
+                  Complete & Save Adaptive Test
+                </h3>
+                <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Record this session ({sessionReviews.length} items) into {currentUser?.name}&apos;s test history.
+                </p>
+              </div>
+              <button
+                onClick={() => setFinishModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={`p-3.5 rounded-xl border grid grid-cols-3 gap-2 text-center text-xs font-mono ${
+              isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-800/40 border-slate-700'
+            }`}>
+              <div>
+                <span className="text-slate-400 block text-[10px]">SOLVED</span>
+                <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                  {sessionReviews.filter(r => r.isCorrect).length}/{sessionReviews.length}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">ACCURACY</span>
+                <span className="font-bold text-sm text-blue-600 dark:text-blue-400">
+                  {Math.round((sessionReviews.filter(r => r.isCorrect).length / sessionReviews.length) * 100)}%
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">TIME</span>
+                <span className="font-bold text-sm text-slate-700 dark:text-slate-300">
+                  {Math.floor(secondsElapsed / 60)}m {secondsElapsed % 60}s
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-mono font-medium text-slate-500">
+                Attach Diagnostic Note to this Session (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="Note Title: e.g. Sign rule for galvanic cell ΔG°"
+                value={sessionNoteTitle}
+                onChange={(e) => setSessionNoteTitle(e.target.value)}
+                className={`w-full px-3 py-2 text-xs rounded-lg border outline-none ${
+                  isLight ? 'bg-slate-50 border-slate-200 focus:border-blue-500' : 'bg-slate-800 border-slate-700 focus:border-blue-500'
+                }`}
+              />
+              <textarea
+                rows={3}
+                placeholder="Write observations, tricky formulas, or mistakes to review later in your Notes..."
+                value={sessionNoteContent}
+                onChange={(e) => setSessionNoteContent(e.target.value)}
+                className={`w-full px-3 py-2 text-xs rounded-lg border outline-none ${
+                  isLight ? 'bg-slate-50 border-slate-200 focus:border-blue-500' : 'bg-slate-800 border-slate-700 focus:border-blue-500'
+                }`}
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setFinishModalOpen(false)}
+                className={`px-4 py-2 text-xs rounded-lg border ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+                }`}
+              >
+                Keep Testing
+              </button>
+              <button
+                onClick={handleFinishAndSaveTest}
+                disabled={isSavingTest}
+                className="px-4 py-2 text-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition shadow-sm"
+              >
+                {isSavingTest ? 'Saving to Database...' : 'Save & View in Past Tests →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SIGNATURE FEATURE: "WHY THIS QUESTION?" */}
       <section className={`rounded-xl border overflow-hidden transition-all ${

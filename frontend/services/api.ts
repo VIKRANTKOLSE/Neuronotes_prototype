@@ -4,7 +4,11 @@ import {
   MisconceptionItem, 
   ActivityLog, 
   SubmissionPayload, 
-  SubmissionResult 
+  SubmissionResult,
+  UserProfile,
+  PastTestSession,
+  TestNote,
+  FullUserData
 } from '../types';
 import { 
   CONCEPTS, 
@@ -17,9 +21,27 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 class NeuronotesApiService {
   private baseUrl: string;
+  private currentUserId: string = 'user-history';
 
   constructor() {
     this.baseUrl = BASE_URL.replace(/\/$/, '');
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('neuronotes-active-user');
+      if (savedUser) {
+        this.currentUserId = savedUser;
+      }
+    }
+  }
+
+  getCurrentUserId(): string {
+    return this.currentUserId;
+  }
+
+  setCurrentUserId(userId: string): void {
+    this.currentUserId = userId;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('neuronotes-active-user', userId);
+    }
   }
 
   private async request<T>(endpoint: string, options?: RequestInit, fallbackData?: T): Promise<T> {
@@ -28,6 +50,7 @@ class NeuronotesApiService {
         ...options,
         headers: {
           'Content-Type': 'application/json',
+          'X-User-Id': this.currentUserId,
           ...(options?.headers || {}),
         },
       });
@@ -47,6 +70,67 @@ class NeuronotesApiService {
   }
 
   /**
+   * Fetch all users
+   */
+  async getUsers(): Promise<UserProfile[]> {
+    const fallbackUsers: UserProfile[] = [
+      {
+        id: 'user-new',
+        name: 'Elena Rostova',
+        email: 'elena.rostova@university.edu',
+        major: 'First-Year Physical Sciences',
+        avatarInitials: 'ER',
+        isNewUser: true,
+        overallMastery: 0,
+        estimatedTheta: 0.0,
+        standardError: 1.20,
+        itemsAnswered: 0,
+        reliabilityScore: 12,
+        statusSummary: 'Unprobed baseline state. Complete adaptive diagnostic probe to begin calibration.'
+      },
+      {
+        id: 'user-history',
+        name: 'Vikrant Kolse',
+        email: 'vikrant.kolse@university.edu',
+        major: 'Undergraduate Chemistry (Year 3)',
+        avatarInitials: 'VK',
+        isNewUser: false,
+        overallMastery: 71,
+        estimatedTheta: 0.45,
+        standardError: 0.28,
+        itemsAnswered: 54,
+        reliabilityScore: 89,
+        statusSummary: 'Model calibrated. Gibbs Energy has posterior uncertainty; Nernst Equation requires targeted review.'
+      }
+    ];
+
+    return this.request<UserProfile[]>('/api/users', { method: 'GET' }, fallbackUsers);
+  }
+
+  /**
+   * Fetch current active user data
+   */
+  async getCurrentUser(): Promise<FullUserData> {
+    return this.request<FullUserData>(`/api/users/current`, { method: 'GET' });
+  }
+
+  /**
+   * Switch active user on backend
+   */
+  async switchUser(userId: string): Promise<void> {
+    this.setCurrentUserId(userId);
+    try {
+      await fetch(`${this.baseUrl}/api/users/current`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+    } catch (e) {
+      console.warn('Backend user switch notification failed, client state updated', e);
+    }
+  }
+
+  /**
    * Fetch all concepts with current psychometric mastery & confidence state
    */
   async getConcepts(): Promise<Concept[]> {
@@ -62,7 +146,7 @@ class NeuronotesApiService {
   }
 
   /**
-   * Request next adaptive diagnostic question from the psychometric item selection engine
+   * Request next adaptive diagnostic question
    */
   async getAdaptiveQuestion(params?: { conceptId?: string; subject?: string }): Promise<Question> {
     let endpoint = '/api/questions/adaptive';
@@ -122,6 +206,102 @@ class NeuronotesApiService {
    */
   async getRecentActivities(): Promise<ActivityLog[]> {
     return this.request<ActivityLog[]>('/api/activities', { method: 'GET' }, RECENT_ACTIVITIES);
+  }
+
+  /**
+   * Past Tests: Fetch list of tests taken by the user
+   */
+  async getPastTests(): Promise<PastTestSession[]> {
+    return this.request<PastTestSession[]>('/api/tests', { method: 'GET' }, []);
+  }
+
+  /**
+   * Past Tests: Fetch detailed test session with questions and notes
+   */
+  async getPastTestById(testId: string): Promise<PastTestSession | null> {
+    return this.request<PastTestSession | null>(`/api/tests/${testId}`, { method: 'GET' }, null);
+  }
+
+  /**
+   * Past Tests: Record a newly finished test session
+   */
+  async recordTest(testData: Partial<PastTestSession>): Promise<PastTestSession> {
+    return this.request<PastTestSession>('/api/tests', {
+      method: 'POST',
+      body: JSON.stringify(testData)
+    });
+  }
+
+  /**
+   * Diagnostic Notes: Retrieve all notes taken by the user
+   */
+  async getNotes(filter?: { testId?: string; conceptId?: string; search?: string }): Promise<TestNote[]> {
+    let endpoint = '/api/notes';
+    const params = new URLSearchParams();
+    if (filter?.testId) params.append('testId', filter.testId);
+    if (filter?.conceptId) params.append('conceptId', filter.conceptId);
+    if (filter?.search) params.append('search', filter.search);
+    const queryString = params.toString();
+    if (queryString) endpoint += `?${queryString}`;
+
+    return this.request<TestNote[]>(endpoint, { method: 'GET' }, []);
+  }
+
+  /**
+   * Diagnostic Notes: Create a new note
+   */
+  async createNote(noteData: {
+    testId?: string;
+    title: string;
+    content: string;
+    conceptId?: string;
+    conceptName?: string;
+    tags?: string[];
+  }): Promise<TestNote> {
+    return this.request<TestNote>('/api/notes', {
+      method: 'POST',
+      body: JSON.stringify(noteData)
+    });
+  }
+
+  /**
+   * Diagnostic Notes: Add note directly to a specific test
+   */
+  async addNoteToTest(testId: string, noteData: {
+    title: string;
+    content: string;
+    conceptId?: string;
+    conceptName?: string;
+    tags?: string[];
+  }): Promise<TestNote> {
+    return this.request<TestNote>(`/api/tests/${testId}/notes`, {
+      method: 'POST',
+      body: JSON.stringify(noteData)
+    });
+  }
+
+  /**
+   * Diagnostic Notes: Update a note
+   */
+  async updateNote(noteId: string, updates: Partial<Pick<TestNote, 'title' | 'content' | 'tags' | 'conceptId' | 'conceptName'>>): Promise<TestNote> {
+    return this.request<TestNote>(`/api/notes/${noteId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  }
+
+  /**
+   * Diagnostic Notes: Delete a note
+   */
+  async deleteNote(noteId: string): Promise<boolean> {
+    try {
+      await this.request<{ message: string; id: string }>(`/api/notes/${noteId}`, {
+        method: 'DELETE'
+      });
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

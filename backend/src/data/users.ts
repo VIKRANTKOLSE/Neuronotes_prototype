@@ -1,0 +1,51 @@
+import { FullUserData } from '../types/index.js';
+import { BASELINE_CONCEPTS_TEMPLATE, CALIBRATED_CONCEPTS_HISTORY } from './concepts.js';
+import { MISCONCEPTIONS_DATABASE } from './misconceptions.js';
+import { USER_HISTORY_ACTIVITIES, USER_NEW_ACTIVITIES } from './activities.js';
+import { INITIAL_TESTS_HISTORY } from './tests.js';
+import { INITIAL_TEST_NOTES } from './notes.js';
+
+export const USER_NEW: FullUserData = {
+  id: 'user-new',
+  name: 'Elena Rostova',
+  email: 'elena.rostova@university.edu',
+  major: 'First-Year Physical Sciences',
+  avatarInitials: 'ER',
+  isNewUser: true,
+  overallMastery: 0,
+  estimatedTheta: 0.0,
+  standardError: 1.20,
+  itemsAnswered: 0,
+  reliabilityScore: 12,
+  statusSummary: 'Unprobed baseline state. Complete adaptive diagnostic probe to begin calibration.',
+  concepts: JSON.parse(JSON.stringify(BASELINE_CONCEPTS_TEMPLATE)),
+  misconceptions: [],
+  activities: JSON.parse(JSON.stringify(USER_NEW_ACTIVITIES)),
+  tests: [],
+  notes: []
+};
+
+export const USER_HISTORY: FullUserData = {
+  id: 'user-history',
+  name: 'Vikrant Kolse',
+  email: 'vikrant.kolse@university.edu',
+  major: 'Undergraduate Chemistry (Year 3)',
+  avatarInitials: 'VK',
+  isNewUser: false,
+  overallMastery: 71,
+  estimatedTheta: 0.45,
+  standardError: 0.28,
+  itemsAnswered: 54,
+  reliabilityScore: 89,
+  statusSummary: 'Model calibrated. Gibbs Energy has posterior uncertainty; Nernst Equation requires targeted review.',
+  concepts: JSON.parse(JSON.stringify(CALIBRATED_CONCEPTS_HISTORY)),
+  misconceptions: JSON.parse(JSON.stringify(MISCONCEPTIONS_DATABASE)),
+  activities: JSON.parse(JSON.stringify(USER_HISTORY_ACTIVITIES)),
+  tests: JSON.parse(JSON.stringify(INITIAL_TESTS_HISTORY)),
+  notes: JSON.parse(JSON.stringify(INITIAL_TEST_NOTES))
+};
+
+export const USERS_STORE: Record<string, FullUserData> = {
+  'user-new': USER_NEW,
+  'user-history': USER_HISTORY
+};

@@ -30,7 +30,8 @@ frontend/
 │   ├── quiz/page.tsx                 # Route: /quiz (Adaptive item runner & Explainable AI)
 │   ├── knowledge-map/page.tsx        # Route: /knowledge-map (Prerequisite DAG & Concept Drawer)
 │   ├── progress/page.tsx             # Route: /progress (Psychometric MIRT telemetry & logs)
-│   └── review/page.tsx               # Route: /review (Misconceptions registry & drills)
+│   ├── review/page.tsx               # Route: /review (Misconceptions registry & drills)
+│   └── tests/page.tsx                # Route: /tests (Past tests & diagnostic notes)
 │
 ├── components/
 │   ├── layout/
