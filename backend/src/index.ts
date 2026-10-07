@@ -9,6 +9,7 @@ import testRoutes from './routes/testRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import misconceptionRoutes from './routes/misconceptionRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Route registration
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/concepts', conceptRoutes);
 app.use('/api/questions', questionRoutes);

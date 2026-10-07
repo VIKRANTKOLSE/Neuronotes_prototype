@@ -115,6 +115,31 @@ class NeuronotesApiService {
   }
 
   /**
+   * Authenticate user with email and password or userId
+   */
+  async login(credentials: { email?: string; password?: string; userId?: string }): Promise<{ message: string; token: string; user: FullUserData }> {
+    const res = await this.request<{ message: string; token: string; user: FullUserData }>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+    if (res?.user?.id) {
+      this.setCurrentUserId(res.user.id);
+    }
+    return res;
+  }
+
+  /**
+   * Terminate active session
+   */
+  async logout(): Promise<void> {
+    try {
+      await this.request<{ message: string }>('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // offline fallback
+    }
+  }
+
+  /**
    * Switch active user on backend
    */
   async switchUser(userId: string): Promise<void> {

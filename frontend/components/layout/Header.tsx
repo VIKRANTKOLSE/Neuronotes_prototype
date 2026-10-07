@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Activity, ShieldCheck, Sun, Moon, Users, Check, Sparkles } from 'lucide-react';
+import { Menu, Activity, ShieldCheck, Sun, Moon, Users, Check, Sparkles, LogIn } from 'lucide-react';
 import { useApp } from './ClientLayout';
 
 interface HeaderProps {
@@ -282,8 +283,21 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
 
-              {/* Close Button */}
-              <div className="pt-1">
+              {/* Open Full Login Window */}
+              <div className="pt-1 space-y-1.5">
+                <Link
+                  href="/login"
+                  onClick={() => setProfileOpen(false)}
+                  className={`w-full text-center py-2 text-xs font-mono font-medium rounded-lg border transition flex items-center justify-center gap-1.5 ${
+                    isLight 
+                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 shadow-xs' 
+                      : 'bg-blue-950/40 text-blue-300 border-blue-800 hover:bg-blue-900/50'
+                  }`}
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Open Full Login Window</span>
+                </Link>
+
                 <button
                   onClick={() => setProfileOpen(false)}
                   className={`w-full text-center py-1.5 text-xs rounded-lg transition ${

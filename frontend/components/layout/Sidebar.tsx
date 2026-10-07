@@ -14,8 +14,10 @@ import {
   BookOpen, 
   Sun, 
   Moon,
-  FileText
+  FileText,
+  LogIn
 } from 'lucide-react';
+import { useApp } from './ClientLayout';
 
 interface SidebarProps {
   researcherMode: boolean;
@@ -35,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleTheme,
 }) => {
   const pathname = usePathname();
+  const { currentUser } = useApp();
   const isLight = theme === 'light';
 
   const navItems = [
@@ -170,26 +173,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Footer: User profile & Active Model status */}
-        <div className={`p-3 border-t ${
+        <div className={`p-3 border-t space-y-2 ${
           isLight ? 'border-slate-200 bg-white' : 'border-slate-800 bg-slate-950'
         }`}>
           <div className="flex items-center gap-2.5">
             <div className={`w-7 h-7 rounded-md border flex items-center justify-center text-xs font-mono font-medium ${
-              isLight 
-                ? 'bg-slate-100 text-slate-700 border-slate-200' 
-                : 'bg-slate-800 text-slate-300 border-slate-700'
+              currentUser?.isNewUser
+                ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300'
+                : (isLight 
+                    ? 'bg-slate-100 text-slate-700 border-slate-200' 
+                    : 'bg-slate-800 text-slate-300 border-slate-700')
             }`}>
-              VK
+              {currentUser?.avatarInitials || 'VK'}
             </div>
             <div className="flex-1 min-w-0">
               <p className={`text-xs font-medium truncate ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
-                Vikrant Kolse
+                {currentUser?.name || 'Vikrant Kolse'}
               </p>
               <p className={`text-[10px] font-mono truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                Model active • 71% mastery
+                {currentUser?.isNewUser ? 'Baseline • 0 items' : `Model active • ${currentUser?.overallMastery ?? 71}% mastery`}
               </p>
             </div>
           </div>
+
+          <Link
+            href="/login"
+            className={`w-full py-1.5 px-2 rounded-lg text-[11px] font-mono border transition flex items-center justify-center gap-1.5 ${
+              isLight 
+                ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200' 
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
+            }`}
+          >
+            <LogIn className="w-3 h-3 text-blue-500" />
+            <span>Switch / Sign In</span>
+          </Link>
         </div>
       </aside>
     </>

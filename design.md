@@ -224,33 +224,56 @@ The Express backend listens on `http://localhost:8000` and accepts client identi
 /review
 └── Bayesian Misconceptions Registry & 3-Question Remediation Drills
 
-/tests (NEW)
+/tests
 ├── Tab 1: Past Test Sessions (Cards, Scores, Detail Inspector, Session Notes)
 └── Tab 2: Diagnostic Notes Notebook (Full-text Search, Concept Filters, CRUD)
+
+/login (NEW)
+├── Dual-User One-Click Profile Cards (Elena Rostova vs. Vikrant Kolse)
+├── Academic Credentials Form (email + password validation)
+└── Session Token Issuance & Automatic Navigation
 ```
 
 ---
 
-## 8. Verification & Running Instructions
+## 8. Authentication & Login Subsystem
 
-### 8.1. Start Express Backend (Port 8000)
+The application provides dedicated authentication endpoints and a clinical login view at `/login`:
+
+- **Endpoints**:
+  - `POST /api/auth/login`: Authenticates either by direct profile ID (`userId`) or credentials (`email` + `password`). Issues session tokens (`token-<userId>-<timestamp>`) and returns the hydrated user model.
+  - `GET /api/auth/me`: Validates authorization header or active user cookie and returns the active profile.
+  - `POST /api/auth/logout`: Clears session token.
+- **Configured Test Credentials**:
+  - **User 1 (New)**: `elena.rostova@university.edu` | `neuronotes123`
+  - **User 2 (History)**: `vikrant.kolse@university.edu` | `neuronotes123`
+- **One-Click Quick Switch**: The login portal features instant profile cards comparing Elena's baseline metrics with Vikrant's calibrated profile for frictionless testing.
+
+---
+
+## 9. Verification & Running Instructions
+
+### 9.1. Start Express Backend (Port 8000)
 ```bash
 cd backend
 npm run dev
 ```
 
-### 8.2. Start Next.js Frontend (Port 3000)
+### 9.2. Start Next.js Frontend (Port 3000)
 ```bash
 cd frontend
 npm run dev
 ```
 
-### 8.3. Verification Checklist
+### 9.3. Verification Checklist
 1. Open `http://localhost:3000`.
 2. Inspect active profile in top-right menu: click to switch between **Elena Rostova** (New Learner) and **Vikrant Kolse** (Calibrated Learner).
-3. Observe how the dashboard, mastery KPI, distribution bar, and next best action dynamically change.
-4. Navigate to **Past Tests & Notes** (`/tests`) in the sidebar:
+3. Navigate to **Sign In / Switch Profile** (`/login`):
+   - Test one-click quick authentication for both profiles.
+   - Test credential form login with `vikrant.kolse@university.edu` / `neuronotes123` or `elena.rostova@university.edu` / `neuronotes123`.
+4. Observe how the dashboard, mastery KPI, distribution bar, and next best action dynamically change.
+5. Navigate to **Past Tests & Notes** (`/tests`) in the sidebar:
    - For **Vikrant Kolse**: inspect 3 past tests, view question-by-question breakdown, and review 5 diagnostic notes.
    - For **Elena Rostova**: observe clean baseline state with prompt to start adaptive testing.
-5. Create, edit, search, and filter diagnostic notes.
-6. Run an adaptive quiz session in `/quiz` and click **"Save to Past Tests"** with a custom session note to observe real-time persistence.
+6. Create, edit, search, and filter diagnostic notes.
+7. Run an adaptive quiz session in `/quiz` and click **"Save to Past Tests"** with a custom session note to observe real-time persistence.
