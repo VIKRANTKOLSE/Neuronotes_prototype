@@ -46,7 +46,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { href: '/knowledge-map', label: 'Knowledge Map', icon: GitFork, description: 'Prerequisite DAG' },
     { href: '/progress', label: 'Progress', icon: BarChart3, description: 'Psychometric analytics' },
     { href: '/review', label: 'Review', icon: AlertCircle, description: 'Misconceptions & drills' },
-    { href: '/tests', label: 'Past Tests & Notes', icon: FileText, description: 'Test history & notes' },
   ];
 
   return (
@@ -102,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className={`px-3 pb-2 text-[11px] uppercase font-sans tracking-wider font-semibold ${
             isLight ? 'text-[#718096]' : 'text-slate-500'
           }`}>
-            Platform
+            Platform Navigation
           </div>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -133,6 +132,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : (isLight ? 'text-[#718096] group-hover:text-[#172033]' : 'text-slate-500 group-hover:text-slate-300')
                 }`} />
                 <span className="flex-1 truncate">{item.label}</span>
+                {isActive && (
+                  <ChevronRight className={`w-4 h-4 shrink-0 ${isLight ? 'text-[#526176]' : 'text-slate-400'}`} />
+                )}
               </Link>
             );
           })}
@@ -167,16 +169,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Footer: User profile & Switcher (visually integrated) */}
+        {/* Footer: Appearance controls + User profile (visually integrated) */}
         <div className={`px-4 py-3 border-t space-y-2.5 ${
           isLight ? 'border-[#D7DEE7]' : 'border-slate-800'
         }`}>
+          {/* Light Mode Appearance */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              {isLight ? (
+                <Sun className="w-4 h-4 text-amber-500" />
+              ) : (
+                <Moon className="w-4 h-4 text-blue-400" />
+              )}
+              <div>
+                <p className={`text-xs font-medium ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>
+                  Light Mode
+                </p>
+                <p className={`text-[10px] ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
+                  Appearance
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onToggleTheme}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium border transition ${
+                isLight
+                  ? 'bg-white hover:bg-[#EEF2F6] text-[#526176] border-[#D7DEE7]'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
+              }`}
+            >
+              Switch
+            </button>
+          </div>
+
           <div className="flex items-center gap-2.5">
             <div className={`w-7 h-7 rounded-md border flex items-center justify-center text-xs font-semibold ${
               currentUser?.isNewUser
                 ? 'bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA] dark:bg-amber-900/30 dark:text-amber-300'
-                : (isLight 
-                    ? 'bg-[#EEF2F6] text-[#526176] border-[#D7DEE7]' 
+                : (isLight
+                    ? 'bg-[#EEF2F6] text-[#526176] border-[#D7DEE7]'
                     : 'bg-slate-800 text-slate-300 border-slate-700')
             }`}>
               {currentUser?.avatarInitials || 'VK'}
@@ -186,7 +217,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {currentUser?.name || 'Vikrant Kolse'}
               </p>
               <p className={`text-[10px] font-mono truncate ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
-                {currentUser?.isNewUser ? 'Baseline · 0 items' : `Calibrated · ${currentUser?.overallMastery ?? 71}%`}
+                {currentUser?.isNewUser
+                  ? 'Model: Baseline'
+                  : `Model: Active (${currentUser?.overallMastery ?? 71}% Mastery)`}
               </p>
             </div>
           </div>
@@ -194,8 +227,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Link
             href="/login"
             className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-medium border transition flex items-center justify-center gap-1.5 ${
-              isLight 
-                ? 'bg-white hover:bg-[#EEF2F6] text-[#526176] hover:text-[#172033] border-[#D7DEE7]' 
+              isLight
+                ? 'bg-white hover:bg-[#EEF2F6] text-[#526176] hover:text-[#172033] border-[#D7DEE7]'
                 : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
             }`}
           >

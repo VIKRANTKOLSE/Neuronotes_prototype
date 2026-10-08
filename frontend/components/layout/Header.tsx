@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Activity, ShieldCheck, Sun, Moon, Users, Check, Sparkles, LogIn } from 'lucide-react';
+import { Menu, Activity, ShieldCheck, Sun, Moon, Users, Check, CheckCircle2, Sparkles, LogIn } from 'lucide-react';
 import { useApp } from './ClientLayout';
 
 interface HeaderProps {
@@ -99,18 +99,18 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onToggleResearcherMode}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-sans border transition ${
-            researcherMode 
-              ? (isLight 
-                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] font-medium' 
+            researcherMode
+              ? (isLight
+                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] font-medium'
                   : 'bg-blue-950/40 text-blue-300 border-blue-800')
-              : (isLight 
-                  ? 'bg-white text-[#526176] border-[#D7DEE7] hover:text-[#172033] hover:bg-[#F8FAFC]' 
+              : (isLight
+                  ? 'bg-white text-[#526176] border-[#D7DEE7] hover:text-[#172033] hover:bg-[#F8FAFC]'
                   : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200')
           }`}
           title="Toggle psychometric parameters (Fisher Info, Theta, SE)"
         >
           <Activity className={`w-3.5 h-3.5 ${researcherMode ? 'text-blue-600' : 'text-slate-400'}`} />
-          <span className="hidden sm:inline">Research:</span>
+          <span className="hidden sm:inline">Research Mode:</span>
           <span className={researcherMode ? 'font-semibold' : ''}>{researcherMode ? 'ON' : 'OFF'}</span>
         </button>
 
@@ -118,8 +118,8 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onToggleTheme}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-sans border transition ${
-            isLight 
-              ? 'bg-white text-[#526176] hover:bg-[#F8FAFC] border-[#D7DEE7]' 
+            isLight
+              ? 'bg-white text-[#526176] hover:bg-[#F8FAFC] border-[#D7DEE7]'
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border-slate-800'
           }`}
           title="Toggle Light / Dark Mode"
@@ -127,15 +127,27 @@ export const Header: React.FC<HeaderProps> = ({
           {isLight ? (
             <>
               <Sun className="w-3.5 h-3.5 text-amber-500" />
-              <span className="hidden md:inline">Light</span>
+              <span className="hidden md:inline">Light Mode</span>
             </>
           ) : (
             <>
               <Moon className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden md:inline">Dark</span>
+              <span className="hidden md:inline">Dark Mode</span>
             </>
           )}
         </button>
+
+        {/* Calibrated Status Badge */}
+        {!isNew && (
+          <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-sans border ${
+            isLight
+              ? 'bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]'
+              : 'bg-emerald-950/40 text-emerald-300 border-emerald-800'
+          }`}>
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Calibrated</span>
+          </div>
+        )}
 
         {/* Profile menu dropdown container */}
         <div className="relative">

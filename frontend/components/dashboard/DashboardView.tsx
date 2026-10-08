@@ -56,7 +56,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [currentUser?.id, userRefreshTrigger]);
 
   const isNew = currentUser?.isNewUser ?? false;
-  const targetConceptId = isNew ? 'effective-nuclear-charge' : 'crystal-field-stabilization-energy';
+  const targetConceptId = isNew ? 'effective-nuclear-charge' : 'gibbs-energy';
   const firstName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Vikrant';
   const primaryMisconception = misconceptions[0];
 
@@ -77,11 +77,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className={`font-semibold uppercase tracking-wider text-[11px] ${
               isLight ? 'text-[#526176]' : 'text-slate-400'
             }`}>
-              Chemistry
-            </span>
-            <span className={isLight ? 'text-[#CBD5E1]' : 'text-slate-700'}>•</span>
-            <span className={isLight ? 'text-[#718096]' : 'text-slate-400'}>
-              Physical & Electrochemistry
+              Adaptive Diagnostic Session
             </span>
             {isNew && (
               <>
@@ -101,10 +97,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           }`}>
             Good evening, {firstName}
           </h1>
-          <p className={`text-sm max-w-xl leading-relaxed ${isLight ? 'text-[#526176]' : 'text-slate-400'}`}>
-            {isNew 
+          <p className={`text-sm max-w-xl leading-relaxed mt-1 ${
+            isLight ? 'text-[#526176]' : 'text-slate-400'
+          }`}>
+            {isNew
               ? 'Complete your baseline diagnostic session to calibrate latent ability estimates across the prerequisite DAG.'
-              : 'Neuronotes has updated your psychometric model. Your next targeted actions prioritize concepts with high posterior uncertainty to minimize diagnostic variance.'}
+              : 'Neuronotes has updated your psychometric model. Your next targeted actions are calculated to minimize posterior uncertainty and address emerging misconceptions.'}
           </p>
         </div>
 
@@ -154,18 +152,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <Sparkles className="w-3.5 h-3.5" />
             Next Best Action
           </span>
-          <div className="flex items-center gap-3">
-            <span className={`text-xs font-mono font-medium ${
-              isLight ? 'text-[#7C3AED]' : 'text-purple-300'
-            }`}>
-              {isNew ? '95% prior uncertainty' : '63% posterior uncertainty'}
-            </span>
-            <span className={`text-xs hidden sm:inline ${
-              isLight ? 'text-[#718096]' : 'text-slate-500'
-            }`}>
-              · Max information gain
-            </span>
-          </div>
+          <span className={`text-xs font-mono ${
+            isLight ? 'text-[#718096]' : 'text-slate-400'
+          }`}>
+            Optimized for maximum information gain
+          </span>
         </div>
 
         {/* Content body and CTAs in efficient layout */}
@@ -176,14 +167,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h2 className={`text-2xl font-bold tracking-tight ${
                 isLight ? 'text-[#172033]' : 'text-slate-100'
               }`}>
-                {isNew ? 'Effective Nuclear Charge' : 'Crystal Field Stabilization Energy'}
+                {isNew ? 'Effective Nuclear Charge' : 'Gibbs Energy (ΔG)'}
               </h2>
               <p className={`text-sm mt-1 leading-relaxed ${
                 isLight ? 'text-[#526176]' : 'text-slate-300'
               }`}>
                 {isNew
                   ? 'As a new learner, your knowledge graph is uncalibrated. Administering Tier 1 Foundation items for Effective Nuclear Charge establishes your initial latent ability θ and gates downstream periodic trends.'
-                  : 'Your current estimate for Crystal Field Stabilization Energy has elevated posterior uncertainty (55% confidence). Probing this concept is required before downstream evaluation of High-Spin vs Low-Spin Complexes.'}
+                  : 'Your current estimate for Gibbs Energy has high posterior uncertainty (63% confidence). Resolving this is critical before testing dependent concepts like Cell Potential and Equilibrium Constant.'}
               </p>
             </div>
 
@@ -223,8 +214,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 ~7 min estimated
               </span>
               <span>·</span>
-              <span className={`font-medium ${isLight ? 'text-[#7C3AED]' : 'text-purple-300'}`}>
-                Uncertain (Needs Probing)
+              <span className={`font-medium px-2 py-0.5 rounded-full border text-xs ${
+                isLight 
+                  ? 'text-[#7C3AED] bg-purple-50 border-purple-200' 
+                  : 'text-purple-300 bg-purple-950/40 border-purple-800'
+              }`}>
+                Status: Uncertain (Needs Probing)
               </span>
             </div>
 
@@ -241,23 +236,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Action CTAs: cleanly aligned */}
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 self-start sm:self-auto lg:self-center">
+          <div className="flex flex-col gap-2 shrink-0 self-start lg:self-center">
             <Link
               href={`/quiz?conceptId=${encodeURIComponent(targetConceptId)}`}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium text-sm transition"
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm transition"
             >
-              <span>Start 3 Questions →</span>
-            </Link>
-            <Link
-              href={`/quiz?conceptId=${encodeURIComponent(targetConceptId)}&mode=ai`}
-              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium border transition ${
-                isLight 
-                  ? 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200 shadow-2xs' 
-                  : 'bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border-purple-800'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-              <span>✨ Generate Adaptive AI Test</span>
+              <span>Start Practice →</span>
             </Link>
             <button
               onClick={() => handleInspectConcept(targetConceptId)}
@@ -273,21 +257,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* KNOWLEDGE STATE BREAKDOWN: ANALYTICAL DISTRIBUTION */}
+      {/* YOUR KNOWLEDGE: ANALYTICAL DISTRIBUTION */}
       <section className="space-y-2.5">
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
           <div>
-            <h3 className={`text-base font-bold tracking-tight ${
+            <h3 className={`text-base font-bold tracking-tight uppercase tracking-wide ${
               isLight ? 'text-[#172033]' : 'text-slate-100'
             }`}>
-              Knowledge State Breakdown
+              Your Knowledge
             </h3>
             <p className={`text-xs ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
               Probabilistic mastery estimates calibrated across 45 active concepts
             </p>
           </div>
           <div className={`text-xs ${isLight ? 'text-[#718096]' : 'text-slate-500'}`}>
-            Domain: <span className={`font-semibold ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>Physical & Electrochemistry</span>
+            Subject: <span className={`font-semibold ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>Chemistry</span>
+            {' '}<span className="text-[#2563EB] font-semibold">• {isNew ? '0%' : '71%'} estimated mastery</span>
           </div>
         </div>
 
@@ -299,10 +284,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         }`}>
           <div className="flex justify-between items-center text-xs pb-3">
             <span className={`font-semibold ${isLight ? 'text-[#526176]' : 'text-slate-300'}`}>
-              Active Concept Distribution
+              Domain: Physical &amp; Electrochemistry
             </span>
             <span className={`font-mono text-xs ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
-              Reliability Index: <strong className={isLight ? 'text-[#172033]' : 'text-slate-100'}>{isNew ? '12% (Sparse baseline)' : '89% (Calibrated)'}</strong>
+              Reliability Index: <strong className={isLight ? 'text-[#172033]' : 'text-slate-100'}>{isNew ? '12%' : '80%'}</strong>
             </span>
           </div>
 
