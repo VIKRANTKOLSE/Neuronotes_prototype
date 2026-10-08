@@ -13,7 +13,8 @@ import {
   Activity, 
   RotateCcw,
   AlertTriangle,
-  FlaskConical
+  FlaskConical,
+  Sparkles
 } from 'lucide-react';
 import { Question, SubmissionResult, PastTestQuestionReview } from '@/types';
 import { useApp } from '@/components/layout/ClientLayout';
@@ -22,14 +23,20 @@ import { QUESTIONS_POOL } from '@/lib/mockData';
 
 interface QuizViewProps {
   initialQuestion?: Question;
+  isAiGenerated?: boolean;
 }
 
 export const QuizView: React.FC<QuizViewProps> = ({
   initialQuestion = QUESTIONS_POOL[0],
+  isAiGenerated = false,
 }) => {
   const router = useRouter();
   const { theme, researcherMode, toggleResearcherMode, openMisconception, currentUser } = useApp();
   const isLight = theme === 'light';
+
+  const [aiActive, setAiActive] = useState<boolean>(isAiGenerated);
+  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
+  const [aiGeneratedQueue, setAiGeneratedQueue] = useState<Question[]>([]);
 
   const [questionIndex, setQuestionIndex] = useState<number>(1);
   const [totalQuestions] = useState<number>(5);
@@ -135,6 +142,28 @@ export const QuizView: React.FC<QuizViewProps> = ({
     }
   };
 
+  const handleTriggerAiTest = async () => {
+    setIsGeneratingAi(true);
+    try {
+      const generated = await api.generateAiTest({
+        numQuestions: 5,
+        userTheta: currentUser?.estimatedTheta || 0.2
+      });
+      if (generated && generated.length > 0) {
+        setAiActive(true);
+        setCurrentQuestion(generated[0]);
+        setAiGeneratedQueue(generated.slice(1));
+        setQuestionIndex(1);
+        setSessionReviews([]);
+        handleReset();
+      }
+    } catch (e) {
+      console.warn('AI Test generation error:', e);
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
   const handleFinishAndSaveTest = async () => {
     if (sessionReviews.length === 0) return;
     setIsSavingTest(true);
@@ -142,35 +171,50 @@ export const QuizView: React.FC<QuizViewProps> = ({
     const correctCount = sessionReviews.filter((r) => r.isCorrect).length;
     const score = Math.round((correctCount / sessionReviews.length) * 100);
     const topicsTested = Array.from(new Set(sessionReviews.map((r) => r.conceptName)));
-
-    const testPayload = {
-      title: `Adaptive Diagnostic: ${topicsTested.join(', ')}`,
-      durationSeconds: secondsElapsed,
-      score,
-      correctCount,
-      totalQuestions: sessionReviews.length,
-      topicsTested,
-      thetaStart: currentUser?.estimatedTheta || 0.0,
-      thetaEnd: (currentUser?.estimatedTheta || 0.0) + (score >= 60 ? 0.15 : -0.1),
-      questions: sessionReviews,
-      notes: sessionNoteTitle.trim() ? [{
-        id: `note-auto-${Date.now().toString(36)}`,
-        userId: currentUser?.id || 'user-history',
-        title: sessionNoteTitle.trim(),
-        content: sessionNoteContent.trim() || 'Key takeaways from adaptive session.',
-        conceptName: topicsTested[0] || 'General Chemistry',
-        tags: ['Adaptive Test Note', 'Review'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }] : []
-    };
+    const testTitle = `Adaptive Diagnostic: ${topicsTested.join(', ')}`;
 
     try {
-      await api.recordTest(testPayload);
+      // 1. Invoke NVIDIA NIM AI Evaluation:
+      // Finds errors, calculates mastery across ALL 58 concepts in the knowledge graph,
+      // and synthesizes structured bold elongated mistake diagnostic summaries.
+      await api.evaluateAiSession({
+        questions: sessionReviews,
+        title: testTitle,
+        durationSeconds: secondsElapsed
+      });
+
       setFinishModalOpen(false);
       router.push('/tests');
     } catch (err) {
-      console.error('Failed to record test session:', err);
+      console.warn('AI session evaluation failed, falling back to standard test recorder:', err);
+      const testPayload = {
+        title: testTitle,
+        durationSeconds: secondsElapsed,
+        score,
+        correctCount,
+        totalQuestions: sessionReviews.length,
+        topicsTested,
+        thetaStart: currentUser?.estimatedTheta || 0.0,
+        thetaEnd: (currentUser?.estimatedTheta || 0.0) + (score >= 60 ? 0.15 : -0.1),
+        questions: sessionReviews,
+        notes: sessionNoteTitle.trim() ? [{
+          id: `note-auto-${Date.now().toString(36)}`,
+          userId: currentUser?.id || 'user-history',
+          title: sessionNoteTitle.trim(),
+          content: sessionNoteContent.trim() || 'Key takeaways from adaptive session.',
+          conceptName: topicsTested[0] || 'General Chemistry',
+          tags: ['Adaptive Test Note', 'Review'],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }] : []
+      };
+
+      try {
+        await api.recordTest(testPayload);
+      } catch (recordErr) {
+        console.error('Failed to record test session:', recordErr);
+      }
+      setFinishModalOpen(false);
       router.push('/tests');
     } finally {
       setIsSavingTest(false);
@@ -187,10 +231,18 @@ export const QuizView: React.FC<QuizViewProps> = ({
   const handleNextQuestion = async () => {
     setIsLoading(true);
     try {
-      const nextQ = await api.getAdaptiveQuestion();
-      setCurrentQuestion(nextQ);
-      setQuestionIndex((prev) => Math.min(totalQuestions, prev + 1));
-      handleReset();
+      if (aiGeneratedQueue.length > 0) {
+        const nextQ = aiGeneratedQueue[0];
+        setAiGeneratedQueue((prev) => prev.slice(1));
+        setCurrentQuestion(nextQ);
+        setQuestionIndex((prev) => Math.min(totalQuestions, prev + 1));
+        handleReset();
+      } else {
+        const nextQ = await api.getAdaptiveQuestion();
+        setCurrentQuestion(nextQ);
+        setQuestionIndex((prev) => Math.min(totalQuestions, prev + 1));
+        handleReset();
+      }
     } catch {
       const nextIndex = (QUESTIONS_POOL.findIndex((q) => q.id === currentQuestion.id) + 1) % QUESTIONS_POOL.length;
       setCurrentQuestion(QUESTIONS_POOL[nextIndex]);
@@ -246,6 +298,21 @@ export const QuizView: React.FC<QuizViewProps> = ({
               <Clock className="w-3.5 h-3.5 text-blue-500" />
               <span>{formatTime(secondsElapsed)}</span>
             </div>
+
+            {/* NVIDIA AI Generator Button */}
+            <button
+              onClick={handleTriggerAiTest}
+              disabled={isGeneratingAi}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-xs transition ${
+                aiActive
+                  ? isLight ? 'bg-purple-50 text-purple-700 border-purple-200 shadow-sm' : 'bg-purple-500/10 text-purple-300 border-purple-500/30'
+                  : isLight ? 'bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border-slate-200' : 'bg-slate-950 hover:bg-purple-950/40 text-slate-300 border-slate-800'
+              }`}
+              title="Generate fresh adaptive diagnostic test using NVIDIA NIM API"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isGeneratingAi ? 'animate-spin text-purple-500' : 'text-purple-500'}`} />
+              <span>{isGeneratingAi ? 'Generating...' : aiActive ? 'NVIDIA AI Mode' : '✨ Generate with NVIDIA AI'}</span>
+            </button>
 
             <button
               onClick={() => router.push('/')}
@@ -559,6 +626,19 @@ export const QuizView: React.FC<QuizViewProps> = ({
                 <span className="text-slate-400 block text-[10px]">TIME</span>
                 <span className="font-bold text-sm text-slate-700 dark:text-slate-300">
                   {Math.floor(secondsElapsed / 60)}m {secondsElapsed % 60}s
+                </span>
+              </div>
+            </div>
+
+            {/* NVIDIA AI Evaluation Notice */}
+            <div className={`p-3 rounded-xl border text-xs font-mono flex items-start gap-2.5 ${
+              isLight ? 'bg-purple-50/70 border-purple-200 text-purple-900' : 'bg-purple-950/30 border-purple-800 text-purple-200'
+            }`}>
+              <Sparkles className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold block text-[11px]">NVIDIA NIM Psychometric AI Evaluation</span>
+                <span className="text-[10px] opacity-90 block mt-0.5 leading-relaxed">
+                  Upon saving, NVIDIA NIM analyzes your cognitive mistakes, calculates mastery for all 58 concepts across the 4-tier Knowledge Graph, and generates an in-depth elongated diagnostic summary note.
                 </span>
               </div>
             </div>

@@ -12,13 +12,25 @@ interface QuizPageProps {
     topic?: string;
     difficulty?: string;
     count?: string;
+    mode?: string;
   };
 }
 
 export default async function QuizPage({ searchParams }: QuizPageProps) {
-  const initialQuestion = await api.getAdaptiveQuestion({
-    conceptId: searchParams?.conceptId,
-  });
+  const isAi = searchParams?.mode === 'ai';
+  let initialQuestion;
 
-  return <QuizView initialQuestion={initialQuestion} />;
+  if (isAi) {
+    const aiQuestions = await api.generateAiTest({
+      conceptIds: searchParams?.conceptId ? [searchParams.conceptId] : undefined,
+      numQuestions: 5
+    });
+    initialQuestion = aiQuestions[0];
+  } else {
+    initialQuestion = await api.getAdaptiveQuestion({
+      conceptId: searchParams?.conceptId,
+    });
+  }
+
+  return <QuizView initialQuestion={initialQuestion} isAiGenerated={isAi} />;
 }

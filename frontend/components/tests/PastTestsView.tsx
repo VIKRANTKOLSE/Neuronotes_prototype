@@ -265,7 +265,18 @@ export const PastTestsView: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Link
+              href="/quiz?mode=ai"
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition ${
+                isLight 
+                  ? 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 shadow-2xs' 
+                  : 'bg-purple-950/40 hover:bg-purple-900/60 border-purple-800 text-purple-300'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span>✨ Generate AI Test (NVIDIA)</span>
+            </Link>
             <button
               onClick={() => handleOpenAddNote(selectedTestId || undefined)}
               className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm"

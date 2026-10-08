@@ -7,6 +7,7 @@ import {
   SubmissionResult,
   UserProfile,
   PastTestSession,
+  PastTestQuestionReview,
   TestNote,
   FullUserData,
   DependencyGraphData
@@ -203,6 +204,68 @@ class NeuronotesApiService {
       : null) || QUESTIONS_POOL[0];
 
     return this.request<Question>(endpoint, { method: 'GET' }, fallback);
+  }
+
+  /**
+   * Generate an adaptive diagnostic test powered by NVIDIA NIM
+   */
+  async generateAiTest(params?: {
+    conceptIds?: string[];
+    tier?: number;
+    numQuestions?: number;
+    userTheta?: number;
+    difficulty?: 'adaptive' | 'foundational' | 'advanced';
+  }): Promise<Question[]> {
+    try {
+      const res = await this.request<{ success: boolean; count: number; questions: Question[] }>(
+        '/api/ai/generate-test',
+        {
+          method: 'POST',
+          body: JSON.stringify(params || {})
+        }
+      );
+      if (res?.questions && res.questions.length > 0) {
+        return res.questions;
+      }
+    } catch (e) {
+      console.warn('AI test generation API unavailable, falling back to pool:', e);
+    }
+    return QUESTIONS_POOL.slice(0, params?.numQuestions || 5);
+  }
+
+  /**
+   * Evaluate session with NVIDIA NIM: find errors, calculate mastery for each and every concept in the knowledge graph, and synthesize structured diagnostic summary
+   */
+  async evaluateAiSession(payload: {
+    questions: PastTestQuestionReview[];
+    testId?: string;
+    title?: string;
+    durationSeconds?: number;
+  }): Promise<{
+    diagnosticSummary: string;
+    conceptMasteryUpdates: Array<{
+      conceptId: string;
+      conceptName: string;
+      tier: number;
+      estimatedMastery: number;
+      status: string;
+    }>;
+    summaryNote: TestNote;
+    overallMastery: number;
+    estimatedTheta: number;
+  }> {
+    const res = await this.request<{
+      success: boolean;
+      evaluation: any;
+      test: PastTestSession | null;
+    }>(
+      '/api/ai/evaluate-session',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }
+    );
+    return res.evaluation;
   }
 
   /**

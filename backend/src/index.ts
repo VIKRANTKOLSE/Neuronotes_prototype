@@ -10,6 +10,7 @@ import noteRoutes from './routes/noteRoutes.js';
 import misconceptionRoutes from './routes/misconceptionRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use('/api/tests', testRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/misconceptions', misconceptionRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

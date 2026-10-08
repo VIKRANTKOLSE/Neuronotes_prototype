@@ -145,7 +145,16 @@ A `.env.local` file is located inside `frontend/`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
-*Note: If the backend service is offline, the frontend gracefully falls back to its local psychometric mock model in `lib/mockData.ts`, allowing standalone demonstration of all features.*
+
+A `.env` file is located inside `backend/`:
+```env
+PORT=8000
+NVIDIA_API_KEY=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
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+NVIDIA_MODEL=meta/llama-3.2-11b-vision-instruct
+```
+
+*Note: The platform features full NVIDIA NIM integration for generating adaptive diagnostic items and performing graph-wide mastery calculations across all 58 concepts in the canonical 4-tier knowledge graph.*
 
 ### 5. Production Build Validation
 ```bash

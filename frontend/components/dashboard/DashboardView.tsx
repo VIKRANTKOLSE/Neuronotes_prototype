@@ -241,12 +241,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Action CTAs: cleanly aligned */}
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0 self-start sm:self-auto lg:self-center">
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 self-start sm:self-auto lg:self-center">
             <Link
               href={`/quiz?conceptId=${encodeURIComponent(targetConceptId)}`}
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium text-sm transition"
             >
               <span>Start 3 Questions →</span>
+            </Link>
+            <Link
+              href={`/quiz?conceptId=${encodeURIComponent(targetConceptId)}&mode=ai`}
+              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium border transition ${
+                isLight 
+                  ? 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200 shadow-2xs' 
+                  : 'bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border-purple-800'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span>✨ Generate AI Test (NVIDIA)</span>
             </Link>
             <button
               onClick={() => handleInspectConcept(targetConceptId)}
