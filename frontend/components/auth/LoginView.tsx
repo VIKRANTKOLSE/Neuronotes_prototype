@@ -3,20 +3,24 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  BookOpen, 
-  ArrowRight, 
-  Check, 
-  ShieldCheck, 
-  Lock, 
-  Mail, 
-  Sparkles, 
+import {
+  BookOpen,
+  ArrowRight,
+  Check,
+  ShieldCheck,
+  Lock,
+  Mail,
+  Sparkles,
   AlertCircle,
   HelpCircle,
-  Activity
+  Activity,
+  UserPlus,
+  Users,
+  BadgeCheck,
 } from 'lucide-react';
 import { useApp } from '@/components/layout/ClientLayout';
 import { api } from '@/services/api';
+import { getStoredUsers, createUser, setActiveUserId } from '@/lib/auth';
 
 export const LoginView: React.FC = () => {
   const router = useRouter();
@@ -25,6 +29,8 @@ export const LoginView: React.FC = () => {
 
   const [email, setEmail] = useState<string>('vikrant.kolse@university.edu');
   const [password, setPassword] = useState<string>('neuronotes123');
+  const [name, setName] = useState<string>('');
+  const [isLogin, setIsLogin] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -46,33 +52,55 @@ export const LoginView: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-
-    setIsLoading(true);
     setErrorMessage(null);
-    try {
-      const res = await api.login({ email: email.trim(), password });
-      await switchUser(res.user.id);
-      setSuccessMessage(`Authenticated as ${res.user.name}. Redirecting...`);
-      setTimeout(() => {
-        router.push('/');
-      }, 500);
-    } catch (err) {
-      setErrorMessage((err as Error).message || 'Invalid credentials.');
-    } finally {
+    setIsLoading(true);
+
+    if (!isLogin && !name.trim()) {
+      setErrorMessage('Name is required for registration.');
       setIsLoading(false);
+      return;
     }
+
+    if (isLogin) {
+      // Accept any email — create an account on the fly if none exists yet
+      let user = getStoredUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (!user) {
+        const emailName = email.split('@')[0];
+        const displayName = emailName
+          .split(/[._-]/)
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+        user = createUser(displayName, email, password);
+      }
+      await api.login({ userId: user.id });
+      await switchUser(user.id);
+      setSuccessMessage(`Signed in as ${user.name}. Redirecting...`);
+      setTimeout(() => router.push('/'), 500);
+    } else {
+      try {
+        const newUser = createUser(name.trim(), email.trim(), password);
+        await api.login({ userId: newUser.id });
+        await switchUser(newUser.id);
+        setSuccessMessage(`Account created as ${newUser.name}. Redirecting...`);
+        setTimeout(() => router.push('/'), 500);
+      } catch (err: any) {
+        setErrorMessage(err.message || 'Registration failed.');
+      }
+    }
+    setIsLoading(false);
   };
 
-  const prefillUser = (target: 'elena' | 'vikrant') => {
+  const prefillUser = (target: 'elena' | 'vikrant' | string) => {
     if (target === 'elena') {
       setEmail('elena.rostova@university.edu');
       setPassword('neuronotes123');
+      setName('Elena Rostova');
     } else {
       setEmail('vikrant.kolse@university.edu');
       setPassword('neuronotes123');
+      setName('Vikrant Kolse');
     }
     setErrorMessage(null);
   };
@@ -269,11 +297,31 @@ export const LoginView: React.FC = () => {
           <div className="flex items-center gap-2">
             <Lock className="w-4 h-4 text-blue-500" />
             <h2 className={`text-sm font-semibold font-mono uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-              Credentials Authentication
+              {isLogin ? 'Sign In to Your Account' : 'Create a New Account'}
             </h2>
           </div>
-          <span className="text-[11px] font-mono text-slate-400">Password: neuronotes123</span>
         </div>
+
+        {!isLogin && (
+          <div className="space-y-1.5">
+            <label className="block text-xs font-mono font-medium text-slate-500 mb-1">
+              Full Name
+            </label>
+            <div className="relative">
+              <UserPlus className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your full name"
+                className={`w-full pl-9 pr-3 py-2 text-xs rounded-lg border outline-none font-mono ${
+                  isLight ? 'bg-slate-50 border-slate-200 focus:border-blue-500 text-slate-900' : 'bg-slate-800 border-slate-700 focus:border-blue-500 text-slate-100'
+                }`}
+              />
+            </div>
+          </div>
+        )}
 
         {errorMessage && (
           <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
@@ -289,10 +337,10 @@ export const LoginView: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form onSubmit={handleAuthSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-mono font-medium text-slate-500 mb-1">
-              Institutional Email
+              Email
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -301,7 +349,7 @@ export const LoginView: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="elena.rostova@university.edu"
+                placeholder="your@email.com"
                 className={`w-full pl-9 pr-3 py-2 text-xs rounded-lg border outline-none font-mono ${
                   isLight ? 'bg-slate-50 border-slate-200 focus:border-blue-500 text-slate-900' : 'bg-slate-800 border-slate-700 focus:border-blue-500 text-slate-100'
                 }`}
@@ -311,16 +359,17 @@ export const LoginView: React.FC = () => {
 
           <div>
             <label className="block text-xs font-mono font-medium text-slate-500 mb-1">
-              Password / Access Token
+              Password
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="password"
                 required
+                minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
+                placeholder="••••••••"
                 className={`w-full pl-9 pr-3 py-2 text-xs rounded-lg border outline-none font-mono ${
                   isLight ? 'bg-slate-50 border-slate-200 focus:border-blue-500 text-slate-900' : 'bg-slate-800 border-slate-700 focus:border-blue-500 text-slate-100'
                 }`}
@@ -334,21 +383,84 @@ export const LoginView: React.FC = () => {
             className="w-full py-2.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm font-mono flex items-center justify-center gap-2"
           >
             {isLoading ? (
-              <span>Authenticating...</span>
-            ) : (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : isLogin ? (
               <>
                 <ShieldCheck className="w-4 h-4" />
-                <span>Verify & Enter Session</span>
+                <span>Sign In</span>
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4" />
+                <span>Create Account</span>
               </>
             )}
           </button>
         </form>
 
         <div className="pt-2 text-center text-xs text-slate-500 font-mono">
-          <Link href="/" className="hover:underline text-blue-600 dark:text-blue-400">
-            ← Continue as current active user ({currentUser?.name || 'Vikrant Kolse'})
-          </Link>
+          {isLogin ? (
+            <span>
+              Don't have an account?{' '}
+              <button onClick={() => { setIsLogin(false); setErrorMessage(null); setSuccessMessage(null); }} className="hover:underline text-blue-600 dark:text-blue-400 font-semibold">
+                Create one here
+              </button>
+            </span>
+          ) : (
+            <span>
+              Already have an account?{' '}
+              <button onClick={() => { setIsLogin(true); setErrorMessage(null); setSuccessMessage(null); }} className="hover:underline text-blue-600 dark:text-blue-400 font-semibold">
+                Sign in
+              </button>
+            </span>
+          )}
         </div>
+      </div>
+
+      {/* REGISTERED USERS LIST */}
+      <div className={`p-6 rounded-2xl border max-w-xl mx-auto space-y-3 ${
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+      }`}>
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-blue-500" />
+          <h2 className={`text-sm font-semibold font-mono uppercase tracking-wider ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+            Registered Learners
+          </h2>
+        </div>
+        {getStoredUsers().length === 0 ? (
+          <p className="text-xs text-slate-500 font-mono">No accounts registered yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {getStoredUsers().map((u) => (
+              <div
+                key={u.id}
+                className={`flex items-center justify-between p-3 rounded-lg border ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-800/40 border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${
+                    u.id === 'user-new'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                  }`}>
+                    {u.avatarInitials}
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">{u.name}</div>
+                    <div className="text-[11px] font-mono text-slate-500">{u.email}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { prefillUser(u.id); setIsLogin(true); }}
+                  className="text-[11px] font-mono px-2.5 py-1 rounded border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
+                >
+                  Use
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

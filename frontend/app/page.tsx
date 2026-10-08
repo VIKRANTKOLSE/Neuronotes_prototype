@@ -1,5 +1,7 @@
+import { redirect } from 'next/navigation';
 import { api } from '@/services/api';
 import { DashboardView } from '@/components/dashboard/DashboardView';
+import { getActiveUser } from '@/lib/auth';
 
 export const metadata = {
   title: 'Dashboard | Neuronotes',
@@ -7,6 +9,12 @@ export const metadata = {
 };
 
 export default async function HomePage() {
+  const activeUser = getActiveUser();
+
+  if (!activeUser) {
+    redirect('/login');
+  }
+
   const [concepts, misconceptions, activities] = await Promise.all([
     api.getConcepts(),
     api.getMisconceptions(),

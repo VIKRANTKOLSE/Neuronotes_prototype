@@ -150,6 +150,15 @@ export interface UserProfile {
   statusSummary: string;
 }
 
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  avatarInitials: string;
+  createdAt: string;
+}
+
 export interface TestNote {
   id: string;
   testId?: string;

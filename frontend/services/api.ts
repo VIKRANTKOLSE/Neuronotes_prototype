@@ -1,9 +1,9 @@
-import { 
-  Concept, 
-  Question, 
-  MisconceptionItem, 
-  ActivityLog, 
-  SubmissionPayload, 
+import {
+  Concept,
+  Question,
+  MisconceptionItem,
+  ActivityLog,
+  SubmissionPayload,
   SubmissionResult,
   UserProfile,
   PastTestSession,
@@ -12,6 +12,7 @@ import {
   FullUserData,
   DependencyGraphData
 } from '../types';
+import { getStoredUsers } from '../lib/auth';
 import { 
   CONCEPTS, 
   CANONICAL_TIERS,
@@ -74,7 +75,7 @@ class NeuronotesApiService {
   }
 
   /**
-   * Fetch all users
+   * Fetch all users — merges registered AuthUsers with the legacy mock UserProfiles
    */
   async getUsers(): Promise<UserProfile[]> {
     const fallbackUsers: UserProfile[] = [
@@ -108,7 +109,30 @@ class NeuronotesApiService {
       }
     ];
 
-    return this.request<UserProfile[]>('/api/users', { method: 'GET' }, fallbackUsers);
+    const serverUsers = await this.request<UserProfile[]>('/api/users', { method: 'GET' }, []);
+    const registered = getStoredUsers().map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      major: 'Registered Learner',
+      avatarInitials: u.avatarInitials,
+      isNewUser: false,
+      overallMastery: 0,
+      estimatedTheta: 0.0,
+      standardError: 1.0,
+      itemsAnswered: 0,
+      reliabilityScore: 0,
+      statusSummary: 'New account — complete the adaptive diagnostic to begin calibration.',
+    }));
+
+    const merged = [...registered];
+    for (const fu of fallbackUsers) {
+      if (!merged.find(u => u.id === fu.id)) merged.push(fu);
+    }
+    for (const su of serverUsers) {
+      if (!merged.find(u => u.id === su.id)) merged.push(su);
+    }
+    return merged;
   }
 
   /**
@@ -119,17 +143,57 @@ class NeuronotesApiService {
   }
 
   /**
-   * Authenticate user with email and password or userId
+   * Authenticate user with email and password or userId.
+   * Falls back to local auth when the backend is offline (no server running).
    */
   async login(credentials: { email?: string; password?: string; userId?: string }): Promise<{ message: string; token: string; user: FullUserData }> {
-    const res = await this.request<{ message: string; token: string; user: FullUserData }>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials)
-    });
-    if (res?.user?.id) {
-      this.setCurrentUserId(res.user.id);
+    try {
+      const res = await this.request<{ message: string; token: string; user: FullUserData }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials)
+      });
+      if (res?.user?.id) {
+        this.setCurrentUserId(res.user.id);
+      }
+      return res;
+    } catch {
+      // Offline fallback: resolve locally via the auth store
+      const userId = credentials.userId
+        || getStoredUsers().find(u => u.email.toLowerCase() === (credentials.email || '').toLowerCase())?.id
+        || credentials.email;
+
+      const localUser = getStoredUsers().find(u => u.id === userId)
+        || getStoredUsers().find(u => u.email.toLowerCase() === (credentials.email || '').toLowerCase());
+
+      if (!localUser) {
+        throw new Error('No account found with this email. Please register first.');
+      }
+
+      this.setCurrentUserId(localUser.id);
+      return {
+        message: 'Authenticated locally (backend offline)',
+        token: 'local-token-' + localUser.id,
+        user: {
+          id: localUser.id,
+          name: localUser.name,
+          email: localUser.email,
+          major: 'Registered Learner',
+          avatarInitials: localUser.avatarInitials,
+          isNewUser: false,
+          overallMastery: 0,
+          estimatedTheta: 0.0,
+          standardError: 1.0,
+          itemsAnswered: 0,
+          reliabilityScore: 0,
+          statusSummary: 'New account — complete the adaptive diagnostic to begin calibration.',
+          concepts: [],
+          misconceptions: [],
+          activities: [],
+          tests: [],
+          notes: [],
+        },
+      };
     }
-    return res;
   }
 
   /**
