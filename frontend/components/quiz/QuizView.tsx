@@ -19,7 +19,7 @@ import {
 import { Question, SubmissionResult, PastTestQuestionReview } from '@/types';
 import { useApp } from '@/components/layout/ClientLayout';
 import { api } from '@/services/api';
-import { QUESTIONS_POOL } from '@/lib/mockData';
+import { QUESTIONS_POOL, CANONICAL_EDGES } from '@/lib/mockData';
 
 interface QuizViewProps {
   initialQuestion?: Question;
@@ -55,12 +55,28 @@ export const QuizView: React.FC<QuizViewProps> = ({
   const [sessionNoteContent, setSessionNoteContent] = useState<string>('');
   const [isSavingTest, setIsSavingTest] = useState<boolean>(false);
 
+  // Early-exit rule: wrong answer after Q3 → show prerequisites → return to dashboard
+  const [wrongAnswerCount, setWrongAnswerCount] = useState<number>(0);
+  const [earlyExitActive, setEarlyExitActive] = useState<boolean>(false);
+  const [earlyExitCountdown, setEarlyExitCountdown] = useState<number>(8);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setSecondsElapsed((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Countdown to dashboard when early-exit is triggered
+  useEffect(() => {
+    if (!earlyExitActive) return;
+    if (earlyExitCountdown <= 0) {
+      router.push('/');
+      return;
+    }
+    const t = setTimeout(() => setEarlyExitCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [earlyExitActive, earlyExitCountdown, router]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -110,6 +126,15 @@ export const QuizView: React.FC<QuizViewProps> = ({
         } : undefined
       };
       setSessionReviews((prev) => [...prev, review]);
+
+      // Early-exit rule: wrong answer after question 3
+      if (!result.isCorrect && questionIndex > 3) {
+        const newCount = wrongAnswerCount + 1;
+        setWrongAnswerCount(newCount);
+        if (newCount >= 1) {
+          setEarlyExitActive(true);
+        }
+      }
     } catch {
       const isCorrect = selectedOptionId === currentQuestion.correctOptionId;
       const fallbackResult = {
@@ -137,6 +162,15 @@ export const QuizView: React.FC<QuizViewProps> = ({
         latencySeconds: secondsElapsed,
       };
       setSessionReviews((prev) => [...prev, review]);
+
+      // Early-exit rule: wrong answer after question 3 (fallback path)
+      if (!isCorrect && questionIndex > 3) {
+        const newCount = wrongAnswerCount + 1;
+        setWrongAnswerCount(newCount);
+        if (newCount >= 1) {
+          setEarlyExitActive(true);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -258,6 +292,86 @@ export const QuizView: React.FC<QuizViewProps> = ({
   const hasTriggeredMisconception = isSubmitted && !isCorrect && (selectedOption?.isMisconceptionDistractor || !!submissionResult?.triggeredMisconception);
 
   const progressPct = Math.round((questionIndex / totalQuestions) * 100);
+
+  // Derive prerequisite concept names for the current concept from the knowledge graph edges
+  const conceptSlug = currentQuestion.conceptId;
+  const prerequisiteNames = CANONICAL_EDGES
+    .filter((e) => e.target === conceptSlug)
+    .map((e) => e.sourceName);
+
+  // ── EARLY EXIT MODAL ─────────────────────────────────────────────────────
+  if (earlyExitActive) {
+    return (
+      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isLight ? 'bg-slate-100' : 'bg-slate-950'}`}>
+        <div className={`w-full max-w-lg rounded-2xl border shadow-2xl p-8 space-y-6 ${
+          isLight ? 'bg-white border-rose-200' : 'bg-slate-900 border-rose-900/60'
+        }`}>
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <span className={`p-2 rounded-xl border ${isLight ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
+              <XCircle className="w-6 h-6" />
+            </span>
+            <div>
+              <h2 className={`text-lg font-bold tracking-tight ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                Session Terminated — Prerequisite Gap Detected
+              </h2>
+              <p className={`text-xs font-mono mt-0.5 ${isLight ? 'text-rose-600' : 'text-rose-400'}`}>
+                Incorrect answer after Question 3 triggers early exit
+              </p>
+            </div>
+          </div>
+
+          {/* Explanation */}
+          <div className={`p-4 rounded-xl border text-sm leading-relaxed ${
+            isLight ? 'bg-amber-50 border-amber-200 text-slate-800' : 'bg-amber-500/10 border-amber-500/30 text-slate-200'
+          }`}>
+            <strong className={isLight ? 'text-slate-900' : 'text-white'}>Diagnostic result:</strong> Your response pattern on{' '}
+            <span className="font-semibold text-blue-600 dark:text-blue-400">{currentQuestion.conceptName}</span> after the baseline phase indicates insufficient prerequisite mastery. Review the concepts below before retrying this session.
+          </div>
+
+          {/* Prerequisites */}
+          <div className="space-y-2">
+            <p className={`text-xs font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              Required Prerequisites for {currentQuestion.conceptName}
+            </p>
+            {prerequisiteNames.length > 0 ? (
+              <ul className="space-y-2">
+                {prerequisiteNames.map((name, i) => (
+                  <li key={i} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-sm font-medium ${
+                    isLight ? 'bg-blue-50 border-blue-200 text-blue-900' : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+                  }`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                      isLight ? 'bg-blue-200 text-blue-800' : 'bg-blue-500/30 text-blue-200'
+                    }`}>{i + 1}</span>
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={`text-sm italic ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                Review Tier 1 Foundation concepts in the Knowledge Map.
+              </p>
+            )}
+          </div>
+
+          {/* Countdown + CTA */}
+          <div className={`pt-4 border-t flex items-center justify-between gap-4 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+            <p className={`text-xs font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              Returning to dashboard in <span className="font-bold text-rose-500">{earlyExitCountdown}s</span>...
+            </p>
+            <button
+              onClick={() => router.push('/')}
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm font-mono transition shadow-md flex items-center gap-2"
+            >
+              <span>Go to Dashboard</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

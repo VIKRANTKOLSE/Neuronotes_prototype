@@ -284,7 +284,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         }`}>
           <div className="flex justify-between items-center text-xs pb-3">
             <span className={`font-semibold ${isLight ? 'text-[#526176]' : 'text-slate-300'}`}>
-              Domain: Physical &amp; Electrochemistry
+              Domain: Inorganic &amp; Coordination Chemistry
             </span>
             <span className={`font-mono text-xs ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
               Reliability Index: <strong className={isLight ? 'text-[#172033]' : 'text-slate-100'}>{isNew ? '12%' : '80%'}</strong>

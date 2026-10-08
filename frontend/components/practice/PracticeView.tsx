@@ -17,20 +17,20 @@ export const PracticeView: React.FC = () => {
 
   // Manual practice configuration state
   const [subject, setSubject] = useState('Chemistry');
-  const [topic, setTopic] = useState('Gibbs Energy & Electrochemistry');
+  const [topic, setTopic] = useState('Periodic Trends & Effective Nuclear Charge');
   const [difficulty, setDifficulty] = useState<'adaptive' | 'introductory' | 'intermediate' | 'rigorous'>('intermediate');
   const [numQuestions, setNumQuestions] = useState(5);
   const [sessionLength, setSessionLength] = useState(10);
 
   const topicsList = [
-    'Thermodynamics Foundations',
-    'Enthalpy (ΔH) & Hess’s Law',
-    'Entropy (ΔS) & Microstates',
-    'Gibbs Energy & Spontaneity',
-    'Cell Potential (E°cell)',
-    'Nernst Equation & Concentration Cells',
-    'Equilibrium Constant (K) Coupling',
-    'Faraday’s Laws of Electrolysis'
+    'Periodic Trends & Effective Nuclear Charge',
+    'Chemical Bonding & Molecular Structure',
+    'Coordination Chemistry & Crystal Field Theory',
+    'd-Block & Transition Metal Chemistry',
+    'p-Block Elements & Main Group Chemistry',
+    'Acids, Bases & Redox in Inorganic Systems',
+    'Lanthanoids & Actinoids',
+    'Metallurgy & Extraction Principles'
   ];
 
   const handleStartAdaptiveSession = () => {
@@ -189,7 +189,7 @@ export const PracticeView: React.FC = () => {
                   : 'bg-slate-950 border-slate-800 text-slate-200'
               }`}
             >
-              <option value="Chemistry">Chemistry (Physical & Electrochemistry)</option>
+              <option value="Chemistry">Chemistry (Inorganic & Coordination)</option>
               <option value="Physics">Physics (Thermodynamics & Kinetics)</option>
               <option value="Biology">Biochemistry (Bioenergetics)</option>
             </select>

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, 
   Target, 
@@ -14,8 +14,7 @@ import {
   BookOpen, 
   Sun, 
   Moon,
-  FileText,
-  LogIn
+  LogOut
 } from 'lucide-react';
 import { useApp } from './ClientLayout';
 
@@ -37,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleTheme,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { currentUser } = useApp();
   const isLight = theme === 'light';
 
@@ -47,6 +47,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { href: '/progress', label: 'Progress', icon: BarChart3, description: 'Psychometric analytics' },
     { href: '/review', label: 'Review', icon: AlertCircle, description: 'Misconceptions & drills' },
   ];
+
+  const handleSignOut = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('neuronotes-authenticated');
+    }
+    onCloseMobile();
+    router.push('/login');
+  };
 
   return (
     <>
@@ -122,7 +130,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60')
                 }`}
               >
-                {/* Thin accent indicator for active state */}
                 {isActive && (
                   <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[#2563EB] rounded-r" />
                 )}
@@ -140,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </div>
 
-        {/* Integrated Research Mode Control (seamless system control, not a floating card) */}
+        {/* Research Mode Control */}
         <div className={`px-4 py-3 border-t flex items-center justify-between ${
           isLight ? 'border-[#D7DEE7]' : 'border-slate-800'
         }`}>
@@ -169,11 +176,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Footer: Appearance controls + User profile (visually integrated) */}
+        {/* Footer: Appearance + User profile + Sign Out */}
         <div className={`px-4 py-3 border-t space-y-2.5 ${
           isLight ? 'border-[#D7DEE7]' : 'border-slate-800'
         }`}>
-          {/* Light Mode Appearance */}
+          {/* Light Mode Toggle */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               {isLight ? (
@@ -202,10 +209,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
+          {/* Current user info */}
           <div className="flex items-center gap-2.5">
             <div className={`w-7 h-7 rounded-md border flex items-center justify-center text-xs font-semibold ${
               currentUser?.isNewUser
-                ? 'bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA] dark:bg-amber-900/30 dark:text-amber-300'
+                ? 'bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA]'
                 : (isLight
                     ? 'bg-[#EEF2F6] text-[#526176] border-[#D7DEE7]'
                     : 'bg-slate-800 text-slate-300 border-slate-700')
@@ -224,17 +232,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          <Link
-            href="/login"
+          {/* Sign Out */}
+          <button
+            onClick={handleSignOut}
             className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-medium border transition flex items-center justify-center gap-1.5 ${
               isLight
-                ? 'bg-white hover:bg-[#EEF2F6] text-[#526176] hover:text-[#172033] border-[#D7DEE7]'
-                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
+                ? 'bg-white hover:bg-rose-50 text-[#526176] hover:text-rose-700 border-[#D7DEE7] hover:border-rose-200'
+                : 'bg-slate-900 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border-slate-800 hover:border-rose-900'
             }`}
           >
-            <LogIn className="w-3.5 h-3.5 text-[#2563EB]" />
-            <span>Switch Learner</span>
-          </Link>
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
+          </button>
         </div>
       </aside>
     </>

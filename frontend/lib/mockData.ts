@@ -2330,7 +2330,7 @@ export const QUESTIONS_POOL: Question[] = [
     id: 'q-nernst-02',
     conceptId: 'nernst-08',
     conceptName: 'Nernst Equation',
-    subject: 'Physical Chemistry',
+    subject: 'Inorganic Chemistry',
     stem: 'Consider a concentration cell operated at 298 K with copper electrodes: Cu(s) | Cu²⁺(aq, 0.0010 M) || Cu²⁺(aq, 1.0 M) | Cu(s). How does the cell potential change as the reaction approaches equilibrium?',
     contextNotation: 'E = E° - (0.0592 / n) log(Q)  •  E° = 0.00 V for identical half-cells',
     options: [

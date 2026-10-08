@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MisconceptionModal } from '@/components/modals/MisconceptionModal';
@@ -41,6 +41,7 @@ interface ClientLayoutProps {
 
 export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
   const [researcherMode, setResearcherMode] = useState<boolean>(false);
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
@@ -51,6 +52,9 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [userRefreshTrigger, setUserRefreshTrigger] = useState<number>(0);
 
+  // Detect auth pages — no nav chrome on login
+  const isAuthPage = pathname === '/login' || pathname?.startsWith('/login/');
+
   useEffect(() => {
     const saved = localStorage.getItem('neuronotes-theme');
     if (saved === 'light' || saved === 'dark') {
@@ -58,6 +62,16 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
     }
     setMounted(true);
   }, []);
+
+  // Auth guard: redirect to /login if not authenticated (and not already on login page)
+  useEffect(() => {
+    if (!mounted) return;
+    if (isAuthPage) return;
+    const isAuthenticated = localStorage.getItem('neuronotes-authenticated');
+    if (!isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [mounted, isAuthPage, router]);
 
   // Fetch users on mount
   useEffect(() => {
@@ -142,30 +156,39 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
       <div className={`min-h-screen transition-colors font-sans selection:bg-blue-600/30 selection:text-blue-200 ${
         theme === 'light' ? 'bg-app-bg text-app-text-primary' : 'bg-slate-950 text-slate-100'
       }`}>
-        {/* Sidebar Navigation */}
-        <Sidebar
-          researcherMode={researcherMode}
-          onToggleResearcherMode={toggleResearcherMode}
-          mobileOpen={mobileOpen}
-          onCloseMobile={() => setMobileOpen(false)}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-        />
-
-        {/* Main Content Area */}
-        <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
-          <Header
-            onOpenMobile={() => setMobileOpen(true)}
-            researcherMode={researcherMode}
-            onToggleResearcherMode={toggleResearcherMode}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-          />
-
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        {/* Auth pages: no sidebar or header, just render children full-screen */}
+        {isAuthPage ? (
+          <main className="min-h-screen flex flex-col">
             {children}
           </main>
-        </div>
+        ) : (
+          <>
+            {/* Sidebar Navigation */}
+            <Sidebar
+              researcherMode={researcherMode}
+              onToggleResearcherMode={toggleResearcherMode}
+              mobileOpen={mobileOpen}
+              onCloseMobile={() => setMobileOpen(false)}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+            />
+
+            {/* Main Content Area */}
+            <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
+              <Header
+                onOpenMobile={() => setMobileOpen(true)}
+                researcherMode={researcherMode}
+                onToggleResearcherMode={toggleResearcherMode}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+              />
+
+              <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+                {children}
+              </main>
+            </div>
+          </>
+        )}
 
         {/* Misconception Diagnostic Modal */}
         <MisconceptionModal
