@@ -10,9 +10,9 @@ import { CANONICAL_TIERS, BASELINE_CONCEPTS_TEMPLATE } from '../data/concepts.js
 import { QUESTIONS_DATABASE } from '../data/questions.js';
 import { UserService } from './userService.js';
 
-const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY || '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';
-const NVIDIA_BASE_URL = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
-const PRIMARY_MODEL = process.env.NVIDIA_MODEL || 'meta/llama-3.2-11b-vision-instruct';
+const AI_API_KEY = process.env.AI_API_KEY || process.env.NVIDIA_API_KEY || '';
+const AI_BASE_URL = process.env.AI_BASE_URL || process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
+const PRIMARY_MODEL = process.env.AI_MODEL || process.env.NVIDIA_MODEL || 'meta/llama-3.2-11b-vision-instruct';
 const FALLBACK_MODEL = 'google/diffusiongemma-26b-a4b-it';
 
 export interface ConceptMasteryUpdate {
@@ -44,9 +44,9 @@ export interface GenerateTestParams {
 
 export class AiService {
   /**
-   * Helper to invoke NVIDIA NIM Chat Completion API with fallback
+   * Helper to invoke Psychometric AI Chat Completion API with fallback
    */
-  private static async callNvidiaChat(
+  private static async callPsychometricInference(
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>, 
     maxTokens = 2500, 
     temperature = 0.2
@@ -59,11 +59,11 @@ export class AiService {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 20000);
 
-        const response = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
+        const response = await fetch(`${AI_BASE_URL}/chat/completions`, {
           method: 'POST',
           signal: controller.signal,
           headers: {
-            'Authorization': `Bearer ${NVIDIA_API_KEY}`,
+            'Authorization': `Bearer ${AI_API_KEY}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -78,7 +78,7 @@ export class AiService {
 
         if (!response.ok) {
           const errText = await response.text();
-          console.warn(`[AiService] NVIDIA API error for model ${model}: ${response.status} ${errText}`);
+          console.warn(`[AiService] AI API error for model ${model}: ${response.status} ${errText}`);
           continue;
         }
 
@@ -93,7 +93,7 @@ export class AiService {
       }
     }
 
-    throw lastError || new Error('NVIDIA NIM API call failed across all candidate models.');
+    throw lastError || new Error('Psychometric AI inference call failed across all candidate models.');
   }
 
   /**
@@ -217,7 +217,7 @@ Return a JSON array of questions with this schema:
 ]`;
 
     try {
-      const rawText = await this.callNvidiaChat([
+      const rawText = await this.callPsychometricInference([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ], 3000, 0.2);
@@ -360,14 +360,14 @@ Return JSON strictly matching this structure:
     let parsedResult: any = null;
 
     try {
-      const rawText = await this.callNvidiaChat([
+      const rawText = await this.callPsychometricInference([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ], 4000, 0.15);
 
       parsedResult = this.extractJson<any>(rawText);
     } catch (err) {
-      console.warn('[AiService] NVIDIA session evaluation call failed, using psychometric DAG propagation fallback:', err);
+      console.warn('[AiService] Session evaluation call failed, using psychometric DAG propagation fallback:', err);
     }
 
     const mistakeItems = sessionQuestions.filter(q => !q.isCorrect);
@@ -375,7 +375,7 @@ Return JSON strictly matching this structure:
 
     let summaryText = parsedResult?.diagnosticSummary;
     if (!summaryText || !summaryText.includes('CRITICAL DIAGNOSTIC ERROR')) {
-      summaryText = `SESSION DIAGNOSTIC SUMMARY (NVIDIA Psychometric Evaluation)\n\nCorrect Concepts Evaluated (Normal Size):\n`;
+      summaryText = `SESSION DIAGNOSTIC SUMMARY (Neuronotes Psychometric AI Evaluation)\n\nCorrect Concepts Evaluated (Normal Size):\n`;
       if (correctItems.length > 0) {
         correctItems.forEach(q => {
           summaryText += `✓ ${q.conceptName}: Solved with high fidelity. Demonstrated accurate conceptual command (${q.explanation}).\n`;
@@ -532,7 +532,7 @@ Return JSON strictly matching this structure:
       userId: user.id,
       title: `AI Session Diagnostic Summary: ${sessionQuestions[0]?.conceptName || 'Curriculum Diagnostic'}`,
       conceptName: sessionQuestions[0]?.conceptName || 'Inorganic Chemistry',
-      tags: ['AI Diagnostic', 'NVIDIA Evaluation', 'Session Summary'],
+      tags: ['AI Diagnostic', 'Neuronotes Psychometrics', 'Session Summary'],
       content: summaryText,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

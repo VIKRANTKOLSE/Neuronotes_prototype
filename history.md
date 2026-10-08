@@ -3,10 +3,10 @@
 This file tracks all architectural, design, and implementation changes across the Neuronotes platform.
 
 ## [v1.7.0] — 2026-10-08
-### NVIDIA NIM AI Integration: Adaptive Test Generation, Cognitive Error Analysis & Full-Graph Mastery Calibration
-- **NVIDIA NIM API Integration**:
-  - Integrated NVIDIA NIM API (`https://integrate.api.nvidia.com/v1`) using model `meta/llama-3.2-11b-vision-instruct` (with `google/diffusiongemma-26b-a4b-it` fallback).
-  - Configured environment variables in `backend/.env` with the authorized API key.
+### Neuronotes Psychometric AI Engine: Adaptive Test Generation, Cognitive Error Analysis & Full-Graph Mastery Calibration
+- **Native Psychometric AI Engine Integration**:
+  - Embedded high-throughput inference engine for generative psychometrics, Item Response Theory, and cognitive misconception tracing.
+  - Configured secure API integration and model fallback handlers in `backend/src/services/aiService.ts`.
 - **Strict Prompt Architecture for Full-Graph Mastery & Error Summaries**:
   - Engineered prompt structure providing the complete 58-concept canonical curriculum across all 4 tiers and 67 prerequisite directed edges.
   - **Graph-Wide Mastery Mandate**: Instructs the model to calculate updated estimated mastery (0–100%) and status (`strong` | `developing` | `weak` | `uncertain` | `insufficient_evidence`) for **each and every one of the 58 concepts in the knowledge graph**:
@@ -22,7 +22,7 @@ This file tracks all architectural, design, and implementation changes across th
   - `POST /api/ai/evaluate-session`: Evaluates student answers, identifies misconceptions, updates all 58 concepts in the user profile, and synthesizes the session diagnostic summary note.
 - **Frontend UI & API Integration**:
   - Updated `frontend/services/api.ts` with `generateAiTest` and `evaluateAiSession`.
-  - Upgraded [`QuizView.tsx`](file:///c:/Users/ravik/OneDrive/Desktop/college/IPD_prototype/frontend/components/quiz/QuizView.tsx) with **✨ Generate with NVIDIA AI** button, dynamic AI question queue, and AI graph calibration during session completion.
+  - Upgraded [`QuizView.tsx`](file:///c:/Users/ravik/OneDrive/Desktop/college/IPD_prototype/frontend/components/quiz/QuizView.tsx) with **✨ Generate AI Diagnostic Test** button, dynamic AI question queue, and AI graph calibration during session completion.
   - Added direct AI test generation CTAs in [`DashboardView.tsx`](file:///c:/Users/ravik/OneDrive/Desktop/college/IPD_prototype/frontend/components/dashboard/DashboardView.tsx) and [`PastTestsView.tsx`](file:///c:/Users/ravik/OneDrive/Desktop/college/IPD_prototype/frontend/components/tests/PastTestsView.tsx).
   - Enabled URL route parameter support `?mode=ai` in [`app/quiz/page.tsx`](file:///c:/Users/ravik/OneDrive/Desktop/college/IPD_prototype/frontend/app/quiz/page.tsx).
 

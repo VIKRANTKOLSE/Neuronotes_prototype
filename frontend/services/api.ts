@@ -207,7 +207,7 @@ class NeuronotesApiService {
   }
 
   /**
-   * Generate an adaptive diagnostic test powered by NVIDIA NIM
+   * Generate an adaptive diagnostic test powered by Neuronotes Psychometric AI Engine
    */
   async generateAiTest(params?: {
     conceptIds?: string[];
@@ -234,7 +234,7 @@ class NeuronotesApiService {
   }
 
   /**
-   * Evaluate session with NVIDIA NIM: find errors, calculate mastery for each and every concept in the knowledge graph, and synthesize structured diagnostic summary
+   * Evaluate session with Neuronotes Psychometric AI Engine: find errors, calculate mastery for each and every concept in the knowledge graph, and synthesize structured diagnostic summary
    */
   async evaluateAiSession(payload: {
     questions: PastTestQuestionReview[];

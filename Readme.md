@@ -149,12 +149,12 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 A `.env` file is located inside `backend/`:
 ```env
 PORT=8000
-NVIDIA_API_KEY=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
-NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
-NVIDIA_MODEL=meta/llama-3.2-11b-vision-instruct
+AI_API_KEY=your_psychometric_ai_key_here
+AI_BASE_URL=https://integrate.api.nvidia.com/v1
+AI_MODEL=meta/llama-3.2-11b-vision-instruct
 ```
 
-*Note: The platform features full NVIDIA NIM integration for generating adaptive diagnostic items and performing graph-wide mastery calculations across all 58 concepts in the canonical 4-tier knowledge graph.*
+*Note: The platform features native AI Psychometric Engine integration for dynamically generating adaptive diagnostic items and performing graph-wide mastery calibrations across all 58 concepts in the canonical 4-tier knowledge graph.*
 
 ### 5. Production Build Validation
 ```bash

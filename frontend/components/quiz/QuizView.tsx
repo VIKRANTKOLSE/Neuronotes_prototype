@@ -174,7 +174,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
     const testTitle = `Adaptive Diagnostic: ${topicsTested.join(', ')}`;
 
     try {
-      // 1. Invoke NVIDIA NIM AI Evaluation:
+      // 1. Invoke Neuronotes Psychometric AI Evaluation:
       // Finds errors, calculates mastery across ALL 58 concepts in the knowledge graph,
       // and synthesizes structured bold elongated mistake diagnostic summaries.
       await api.evaluateAiSession({
@@ -299,7 +299,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
               <span>{formatTime(secondsElapsed)}</span>
             </div>
 
-            {/* NVIDIA AI Generator Button */}
+            {/* Neuronotes AI Generator Button */}
             <button
               onClick={handleTriggerAiTest}
               disabled={isGeneratingAi}
@@ -308,10 +308,10 @@ export const QuizView: React.FC<QuizViewProps> = ({
                   ? isLight ? 'bg-purple-50 text-purple-700 border-purple-200 shadow-sm' : 'bg-purple-500/10 text-purple-300 border-purple-500/30'
                   : isLight ? 'bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border-slate-200' : 'bg-slate-950 hover:bg-purple-950/40 text-slate-300 border-slate-800'
               }`}
-              title="Generate fresh adaptive diagnostic test using NVIDIA NIM API"
+              title="Generate fresh adaptive diagnostic test using Neuronotes Psychometric AI Engine"
             >
               <Sparkles className={`w-3.5 h-3.5 ${isGeneratingAi ? 'animate-spin text-purple-500' : 'text-purple-500'}`} />
-              <span>{isGeneratingAi ? 'Generating...' : aiActive ? 'NVIDIA AI Mode' : '✨ Generate with NVIDIA AI'}</span>
+              <span>{isGeneratingAi ? 'Generating...' : aiActive ? 'Adaptive AI Mode' : '✨ Generate AI Diagnostic Test'}</span>
             </button>
 
             <button
@@ -630,15 +630,15 @@ export const QuizView: React.FC<QuizViewProps> = ({
               </div>
             </div>
 
-            {/* NVIDIA AI Evaluation Notice */}
+            {/* Psychometric AI Evaluation Notice */}
             <div className={`p-3 rounded-xl border text-xs font-mono flex items-start gap-2.5 ${
               isLight ? 'bg-purple-50/70 border-purple-200 text-purple-900' : 'bg-purple-950/30 border-purple-800 text-purple-200'
             }`}>
               <Sparkles className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold block text-[11px]">NVIDIA NIM Psychometric AI Evaluation</span>
+                <span className="font-semibold block text-[11px]">Neuronotes Psychometric AI Engine</span>
                 <span className="text-[10px] opacity-90 block mt-0.5 leading-relaxed">
-                  Upon saving, NVIDIA NIM analyzes your cognitive mistakes, calculates mastery for all 58 concepts across the 4-tier Knowledge Graph, and generates an in-depth elongated diagnostic summary note.
+                  Upon saving, the Neuronotes Psychometric AI Engine analyzes your cognitive mistakes, calculates mastery for all 58 concepts across the 4-tier Knowledge Graph, and generates an in-depth elongated diagnostic summary note.
                 </span>
               </div>
             </div>

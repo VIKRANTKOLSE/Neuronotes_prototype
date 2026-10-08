@@ -10,7 +10,7 @@ function getUserId(req: Request): string | undefined {
 
 /**
  * POST /api/ai/generate-test
- * Generates an adaptive diagnostic test using NVIDIA NIM
+ * Generates an adaptive diagnostic test using Neuronotes Psychometric AI Engine
  */
 router.post('/generate-test', async (req: Request, res: Response) => {
   try {

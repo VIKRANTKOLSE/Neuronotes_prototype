@@ -257,7 +257,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-              <span>✨ Generate AI Test (NVIDIA)</span>
+              <span>✨ Generate Adaptive AI Test</span>
             </Link>
             <button
               onClick={() => handleInspectConcept(targetConceptId)}
