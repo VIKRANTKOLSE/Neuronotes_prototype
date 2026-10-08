@@ -10,6 +10,29 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        app: {
+          bg: 'var(--background)',
+          surface: 'var(--surface)',
+          elevated: 'var(--surface-elevated)',
+          secondary: 'var(--surface-secondary)',
+          card: 'var(--surface-card)',
+          border: 'var(--border)',
+          'border-strong': 'var(--border-strong)',
+          'border-header': 'var(--border-header)',
+          'border-separator': 'var(--border-separator)',
+          'text-primary': 'var(--text-primary)',
+          'text-secondary': 'var(--text-secondary)',
+          'text-muted': 'var(--text-muted)',
+          'text-disabled': 'var(--text-disabled)',
+          primary: 'var(--primary)',
+          'primary-hover': 'var(--primary-hover)',
+          'primary-soft': 'var(--primary-soft)',
+          'primary-border': 'var(--primary-border)',
+          header: 'var(--header-bg)',
+          sidebar: 'var(--sidebar-bg)',
+          'sidebar-active': 'var(--sidebar-active)',
+          track: 'var(--track-progress)',
+        },
         brand: {
           50: '#f0f6fe',
           100: '#ddecfc',
@@ -41,6 +64,7 @@ module.exports = {
       },
       boxShadow: {
         'subtle': '0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.03)',
+        'soft': '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
         'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
         'elevated': '0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.04)',
       }

@@ -47,14 +47,54 @@ export class TestService {
     user.itemsAnswered += newTest.totalQuestions;
     user.isNewUser = false;
     
-    // Add any initial notes from the test into the global user notes pool
+    // Ensure each session has strictly ONE notes summary
+    let sessionSummaryNote: TestNote | undefined = newTest.notes?.[0];
+    if (!sessionSummaryNote && newTest.questions && newTest.questions.length > 0) {
+      const mistakeItems = newTest.questions.filter(q => !q.isCorrect);
+      const correctItems = newTest.questions.filter(q => q.isCorrect);
+
+      let summaryContent = `SESSION DIAGNOSTIC SUMMARY\n\nCorrect Concepts Evaluated (Normal Size):\n`;
+      if (correctItems.length > 0) {
+        correctItems.forEach(q => {
+          summaryContent += `✓ ${q.conceptName}: ${q.explanation}\n`;
+        });
+      } else {
+        summaryContent += `None recorded in this session.\n`;
+      }
+
+      if (mistakeItems.length > 0) {
+        summaryContent += `\n[MISTAKES IDENTIFIED & ELONGATED REMEDIATION]\n`;
+        mistakeItems.forEach((q, idx) => {
+          summaryContent += `**[CRITICAL DIAGNOSTIC ERROR #${idx + 1} & REMEDIATION]**\n`;
+          summaryContent += `**Concept with Mistake: ${q.conceptName}**\n`;
+          summaryContent += `**Error Analysis: You selected "${q.selectedOptionText}".**\n`;
+          summaryContent += `**Elongated Diagnostic Breakdown: ${q.explanation} Detailed psychometric tracing indicates this error stemmed from an active misconception. When evaluating this system, verify standard state boundary conditions and sign conventions.**\n`;
+          summaryContent += `**Remediation Rule: Re-solve with correct state conventions: correct solution is "${q.correctOptionText}".**\n\n`;
+        });
+      } else {
+        summaryContent += `\nDiagnostic Evaluation: Zero mistakes observed. All evaluated items solved correctly with high psychometric fidelity.\n`;
+      }
+
+      sessionSummaryNote = {
+        id: `note-summary-${newId}`,
+        testId: newId,
+        userId: user.id,
+        title: `Session Diagnostic Notes Summary: ${newTest.title}`,
+        conceptName: newTest.topicsTested[0] || 'Adaptive Diagnostic',
+        tags: ['Session Summary', ...newTest.topicsTested],
+        content: summaryContent,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      newTest.notes = [sessionSummaryNote];
+    } else if (newTest.notes && newTest.notes.length > 1) {
+      newTest.notes = [newTest.notes[0]];
+    }
+
+    // Keep single note in global pool
     if (newTest.notes && newTest.notes.length > 0) {
-      newTest.notes.forEach(note => {
-        if (!note.id) note.id = `note-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
-        note.testId = newId;
-        note.userId = user.id;
-        user.notes.unshift(note);
-      });
+      user.notes = user.notes.filter(n => n.testId !== newId);
+      user.notes.unshift(newTest.notes[0]);
     }
 
     // Add activity log
@@ -130,15 +170,17 @@ export class TestService {
       updatedAt: new Date().toISOString()
     };
 
-    user.notes.unshift(newNote);
-
-    // If linked to a test, also update that test's internal notes array
+    // If linked to a test, enforce that each session has strictly ONE notes summary
     if (newNote.testId) {
+      user.notes = user.notes.filter(n => n.testId !== newNote.testId);
+      user.notes.unshift(newNote);
+
       const test = user.tests.find(t => t.id === newNote.testId);
       if (test) {
-        if (!test.notes) test.notes = [];
-        test.notes.unshift(newNote);
+        test.notes = [newNote];
       }
+    } else {
+      user.notes.unshift(newNote);
     }
 
     return newNote;

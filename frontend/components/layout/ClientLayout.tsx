@@ -140,7 +140,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
       }}
     >
       <div className={`min-h-screen transition-colors font-sans selection:bg-blue-600/30 selection:text-blue-200 ${
-        theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-slate-950 text-slate-100'
+        theme === 'light' ? 'bg-app-bg text-app-text-primary' : 'bg-slate-950 text-slate-100'
       }`}>
         {/* Sidebar Navigation */}
         <Sidebar

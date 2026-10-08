@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className={`h-16 border-b sticky top-0 z-30 px-4 lg:px-8 flex items-center justify-between transition-colors backdrop-blur-md ${
       isLight 
-        ? 'bg-white/90 border-slate-200 text-slate-800' 
+        ? 'bg-[#F8FAFC] border-[#DCE3EA] text-[#172033]' 
         : 'bg-slate-950/80 border-slate-800/80 text-slate-100'
     }`}>
       {/* Left section: mobile hamburger + screen context */}
@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onOpenMobile}
           className={`lg:hidden p-2 rounded-lg ${
-            isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            isLight ? 'text-[#526176] hover:text-[#172033] hover:bg-[#EAF1F8]' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
           aria-label="Open navigation menu"
         >
@@ -64,48 +64,47 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div>
           <div className="flex items-center gap-2">
-            <h1 className={`text-base font-semibold tracking-tight font-sans ${
-              isLight ? 'text-slate-900' : 'text-slate-100'
+            <span className={`text-sm font-semibold tracking-tight ${
+              isLight ? 'text-[#172033]' : 'text-slate-100'
             }`}>
               {title}
-            </h1>
-            <span className="hidden sm:inline-block text-slate-400 font-mono text-xs">/</span>
-            <span className={`hidden sm:inline-block text-xs font-mono px-2 py-0.5 rounded border ${
-              isLight 
-                ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+            </span>
+            <span className={isLight ? 'text-[#CBD5E1]' : 'text-slate-600'}>/</span>
+            <span className={`text-sm font-medium ${
+              isLight ? 'text-[#526176]' : 'text-slate-400'
             }`}>
               Chemistry
             </span>
           </div>
-          <p className={`text-xs hidden sm:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-xs hidden sm:block ${isLight ? 'text-[#718096]' : 'text-slate-500'}`}>
             {subtitle}
           </p>
         </div>
       </div>
 
       {/* Right section: Theme switcher + System telemetry + Profile */}
-      <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* Model Calibration Status */}
-        <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-mono ${
-          isLight 
-            ? 'bg-white text-slate-600 border-slate-200 shadow-sm' 
-            : 'bg-slate-900 text-slate-400 border-slate-800'
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Model Calibration Status: Calm telemetry indicator, not a boxed pill */}
+        <div className={`hidden md:flex items-center gap-2 text-xs font-medium ${
+          isLight ? 'text-[#526176]' : 'text-slate-400'
         }`}>
-          <ShieldCheck className={`w-3.5 h-3.5 ${isNew ? 'text-amber-500' : 'text-emerald-500'}`} />
+          <span className={`w-2 h-2 rounded-full shrink-0 ${isNew ? 'bg-amber-500' : 'bg-emerald-500'}`} />
           <span>{isNew ? 'Baseline uncalibrated' : 'Model calibrated'}</span>
         </div>
+
+        {/* Vertical divider */}
+        <div className={`hidden md:block w-px h-4 ${isLight ? 'bg-[#D7DEE7]' : 'bg-slate-800'}`} />
 
         {/* Research Mode control */}
         <button
           onClick={onToggleResearcherMode}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono border transition ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-sans border transition ${
             researcherMode 
               ? (isLight 
-                  ? 'bg-blue-50 text-blue-700 border-blue-200 font-medium shadow-sm' 
+                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] font-medium' 
                   : 'bg-blue-950/40 text-blue-300 border-blue-800')
               : (isLight 
-                  ? 'bg-white text-slate-600 border-slate-200 hover:text-slate-900 shadow-sm' 
+                  ? 'bg-white text-[#526176] border-[#D7DEE7] hover:text-[#172033] hover:bg-[#F8FAFC]' 
                   : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200')
           }`}
           title="Toggle psychometric parameters (Fisher Info, Theta, SE)"
@@ -118,9 +117,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Theme Toggle Button */}
         <button
           onClick={onToggleTheme}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono border transition ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-sans border transition ${
             isLight 
-              ? 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200 shadow-sm' 
+              ? 'bg-white text-[#526176] hover:bg-[#F8FAFC] border-[#D7DEE7]' 
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border-slate-800'
           }`}
           title="Toggle Light / Dark Mode"
@@ -142,9 +141,9 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            className={`flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-md border transition ${
+            className={`flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-md border transition ${
               isLight 
-                ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 shadow-sm' 
+                ? 'bg-white hover:bg-[#F8FAFC] border-[#D7DEE7] text-[#172033]' 
                 : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-200'
             }`}
           >
@@ -157,43 +156,43 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <span className="text-xs font-medium hidden sm:inline">{activeName.split(' ')[0]}</span>
             {isNew && (
-              <span className="text-[10px] px-1 py-0.2 bg-amber-500/10 text-amber-600 rounded border border-amber-500/20 font-mono">
+              <span className="text-[10px] px-1 py-0.2 bg-[#FFF7ED] text-[#C2410C] rounded border border-[#FED7AA] font-mono">
                 New
               </span>
             )}
           </button>
 
           {profileOpen && (
-            <div className={`absolute right-0 mt-2 w-80 border rounded-xl shadow-elevated p-3.5 z-50 space-y-3.5 ${
+            <div className={`absolute right-0 mt-2 w-80 border rounded-xl p-3.5 z-50 space-y-3.5 ${
               isLight 
-                ? 'bg-white border-slate-200 text-slate-800 shadow-xl' 
-                : 'bg-slate-900 border-slate-800 text-slate-100'
+                ? 'bg-white border-[#D7DEE7] text-[#172033] shadow-[0_4px_16px_rgba(15,23,42,0.06)]' 
+                : 'bg-slate-900 border-slate-800 text-slate-100 shadow-elevated'
             }`}>
               {/* Active Profile Info */}
-              <div className={`flex items-start gap-3 pb-3 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+              <div className={`flex items-start gap-3 pb-3 border-b ${isLight ? 'border-[#E2E8F0]' : 'border-slate-800'}`}>
                 <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-mono font-semibold text-sm ${
                   isNew
-                    ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700'
-                    : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-600/20 dark:text-blue-400 dark:border-blue-500/40'
+                    ? 'bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA] dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700'
+                    : 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] dark:bg-blue-600/20 dark:text-blue-400 dark:border-blue-500/40'
                 }`}>
                   {activeInitials}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className={`text-sm font-semibold truncate ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                    <h4 className={`text-sm font-semibold truncate ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
                       {activeName}
                     </h4>
                     {isNew ? (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FFF7ED] text-[#C2410C] dark:bg-amber-900/40 dark:text-amber-300 border border-[#FED7AA] dark:border-amber-700">
                         New Learner
                       </span>
                     ) : (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#F0FDF4] text-[#15803D] dark:bg-emerald-900/40 dark:text-emerald-300 border border-[#BBF7D0] dark:border-emerald-700">
                         Has History
                       </span>
                     )}
                   </div>
-                  <p className={`text-xs truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <p className={`text-xs truncate ${isLight ? 'text-[#526176]' : 'text-slate-400'}`}>
                     {currentUser?.major || 'Undergraduate Chemistry'}
                   </p>
                   <p className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
@@ -203,30 +202,30 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* Psychometric Snapshot */}
-              <div className={`space-y-1.5 text-xs ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                <div className={`flex justify-between py-1 border-b font-mono ${isLight ? 'border-slate-100' : 'border-slate-800/60'}`}>
-                  <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>Global Mastery:</span>
-                  <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+              <div className={`space-y-1.5 text-xs ${isLight ? 'text-[#526176]' : 'text-slate-300'}`}>
+                <div className={`flex justify-between py-1 border-b font-mono ${isLight ? 'border-[#E2E8F0]' : 'border-slate-800/60'}`}>
+                  <span className={isLight ? 'text-[#718096]' : 'text-slate-400'}>Global Mastery:</span>
+                  <span className={`font-semibold ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
                     {isNew ? 'Withheld (0%)' : `${activeMastery}%`}
                   </span>
                 </div>
-                <div className={`flex justify-between py-1 border-b font-mono ${isLight ? 'border-slate-100' : 'border-slate-800/60'}`}>
-                  <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>Items Answered:</span>
-                  <span className={isLight ? 'text-slate-900' : 'text-slate-100'}>{activeItems} items</span>
+                <div className={`flex justify-between py-1 border-b font-mono ${isLight ? 'border-[#E2E8F0]' : 'border-slate-800/60'}`}>
+                  <span className={isLight ? 'text-[#718096]' : 'text-slate-400'}>Items Answered:</span>
+                  <span className={isLight ? 'text-[#172033]' : 'text-slate-100'}>{activeItems} items</span>
                 </div>
                 <div className="flex justify-between py-1 font-mono">
-                  <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>Ability θ / SE σ:</span>
-                  <span className={isLight ? 'text-slate-900' : 'text-slate-100'}>
+                  <span className={isLight ? 'text-[#718096]' : 'text-slate-400'}>Ability θ / SE σ:</span>
+                  <span className={isLight ? 'text-[#172033]' : 'text-slate-100'}>
                     θ = {currentUser?.estimatedTheta.toFixed(2) ?? '0.00'}, σ = {currentUser?.standardError.toFixed(2) ?? '1.20'}
                   </span>
                 </div>
               </div>
 
               {/* Learner Profile Switcher */}
-              <div className={`pt-2 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+              <div className={`pt-2 border-t ${isLight ? 'border-[#E2E8F0]' : 'border-slate-800'}`}>
                 <div className="flex items-center gap-1.5 mb-2">
                   <Users className="w-3.5 h-3.5 text-blue-500" />
-                  <span className={`text-xs font-semibold uppercase tracking-wider font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-semibold uppercase tracking-wider font-mono ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
                     Switch Learner Profile
                   </span>
                 </div>
@@ -244,18 +243,18 @@ export const Header: React.FC<HeaderProps> = ({
                         className={`w-full flex items-center justify-between p-2 rounded-lg border text-left transition ${
                           isSelected
                             ? (isLight 
-                                ? 'bg-blue-50 border-blue-300 text-blue-900 shadow-sm' 
+                                ? 'bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8] shadow-xs' 
                                 : 'bg-blue-950/40 border-blue-700 text-blue-200')
                             : (isLight 
-                                ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700' 
+                                ? 'bg-[#F8FAFC] hover:bg-[#F1F4F8] border-[#D9E1E8] text-[#526176]' 
                                 : 'bg-slate-800/50 hover:bg-slate-800 border-slate-700/60 text-slate-300')
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <div className={`w-7 h-7 rounded-md border flex items-center justify-center font-mono text-xs font-semibold ${
                             user.isNewUser
-                              ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300'
-                              : 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300'
+                              ? 'bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA] dark:bg-amber-900/30 dark:text-amber-300'
+                              : 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] dark:bg-blue-900/30 dark:text-blue-300'
                           }`}>
                             {user.avatarInitials}
                           </div>
@@ -263,12 +262,12 @@ export const Header: React.FC<HeaderProps> = ({
                             <div className="text-xs font-semibold flex items-center gap-1.5">
                               {user.name}
                               {user.isNewUser && (
-                                <span className="text-[10px] px-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded">
+                                <span className="text-[10px] px-1 bg-[#FFF7ED] text-[#C2410C] dark:text-amber-300 rounded border border-[#FED7AA]">
                                   New
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[10px] text-[#718096] dark:text-slate-400">
                               {user.isNewUser ? '0 tests • Prior θ = 0.00' : '3 past tests • 5 notes • Calibrated'}
                             </div>
                           </div>
@@ -290,7 +289,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setProfileOpen(false)}
                   className={`w-full text-center py-2 text-xs font-mono font-medium rounded-lg border transition flex items-center justify-center gap-1.5 ${
                     isLight 
-                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 shadow-xs' 
+                      ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]' 
                       : 'bg-blue-950/40 text-blue-300 border-blue-800 hover:bg-blue-900/50'
                   }`}
                 >
@@ -302,7 +301,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setProfileOpen(false)}
                   className={`w-full text-center py-1.5 text-xs rounded-lg transition ${
                     isLight 
-                      ? 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200' 
+                      ? 'text-[#526176] hover:text-[#172033] bg-[#F1F4F8] hover:bg-[#E2E8F0]' 
                       : 'text-slate-400 hover:text-slate-200 bg-slate-800/50 hover:bg-slate-800'
                   }`}
                 >

@@ -25,6 +25,94 @@ import { PastTestSession, TestNote } from '@/types';
 import { useApp } from '@/components/layout/ClientLayout';
 import { api } from '@/services/api';
 
+interface StructuredNoteProps {
+  content: string;
+  isLight: boolean;
+}
+
+const StructuredSessionNoteRenderer: React.FC<StructuredNoteProps> = ({ content, isLight }) => {
+  const sections = content.split('\n\n');
+
+  return (
+    <div className="space-y-3 font-sans">
+      {sections.map((section, sIdx) => {
+        const isMistake = section.includes('[MISTAKE') || 
+                          section.includes('**Concept with Mistake') || 
+                          section.includes('**[CRITICAL DIAGNOSTIC ERROR') ||
+                          section.toLowerCase().includes('critical diagnostic error');
+
+        if (isMistake) {
+          // Mistake Section: Bolded, elongated in explanation, highlighted
+          return (
+            <div
+              key={sIdx}
+              className={`p-4 rounded-xl border-l-[3px] border-l-rose-500 border space-y-2.5 transition-colors ${
+                isLight 
+                  ? 'bg-[#FFFDF9] border-[#FED7AA]/80 text-[#172033]' 
+                  : 'bg-rose-950/20 border-rose-900/40 text-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>Diagnostic Error Identified & In-Depth Remediation</span>
+              </div>
+
+              <div className="space-y-2 text-xs leading-relaxed">
+                {section.split('\n').map((line, lIdx) => {
+                  const clean = line.replace(/\[MISTAKE IDENTIFIED & ELONGATED REMEDIATION\]/g, '').trim();
+                  if (!clean) return null;
+
+                  const isHeader = clean.startsWith('**Concept with Mistake') || clean.startsWith('**[CRITICAL') || clean.startsWith('**Error Analysis');
+                  const isRemediation = clean.startsWith('**Remediation Rule');
+
+                  return (
+                    <div 
+                      key={lIdx} 
+                      className={`${
+                        isHeader 
+                          ? 'font-bold text-sm text-[#172033] dark:text-slate-100 mt-1' 
+                          : isRemediation
+                          ? 'font-bold text-xs bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 p-2.5 rounded-md mt-2'
+                          : 'font-semibold text-xs leading-relaxed text-[#334155] dark:text-slate-200'
+                      }`}
+                    >
+                      {clean.replace(/\*\*/g, '')}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+
+        // Correct / Normal section: normal size, concise explanation
+        return (
+          <div key={sIdx} className={`text-xs leading-relaxed ${isLight ? 'text-[#526176]' : 'text-slate-300'} font-normal space-y-1`}>
+            {section.split('\n').map((line, lIdx) => {
+              const trimmed = line.trim();
+              if (!trimmed) return null;
+
+              if (trimmed.includes('SESSION DIAGNOSTIC SUMMARY') || trimmed.includes('Correct Concepts Evaluated')) {
+                return (
+                  <p key={lIdx} className={`text-xs font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-slate-400'} pt-1`}>
+                    {trimmed}
+                  </p>
+                );
+              }
+
+              return (
+                <div key={lIdx} className="flex items-start gap-1.5 py-0.5">
+                  <span className="leading-relaxed">{trimmed}</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const PastTestsView: React.FC = () => {
   const { theme, currentUser, userRefreshTrigger } = useApp();
   const isLight = theme === 'light';
@@ -401,9 +489,9 @@ export const PastTestsView: React.FC = () => {
                         <span>
                           θ: {test.thetaStart.toFixed(2)} → {test.thetaEnd.toFixed(2)}
                         </span>
-                        <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1 font-medium">
+                        <span className="text-[#2563EB] flex items-center gap-1 font-medium font-sans">
                           <FileText className="w-3 h-3" />
-                          {test.notes?.length ?? 0} notes
+                          <span>1 Notes Summary</span>
                         </span>
                       </div>
                     </div>
@@ -415,89 +503,83 @@ export const PastTestsView: React.FC = () => {
               <div className="lg:col-span-7 space-y-4">
                 {selectedTest ? (
                   <div className={`p-6 rounded-2xl border transition-colors space-y-6 ${
-                    isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+                    isLight ? 'bg-white border-[#D7DEE7] shadow-[0_1px_2px_rgba(15,23,42,0.04)]' : 'bg-slate-900 border-slate-800'
                   }`}>
                     {/* Header Details */}
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono text-slate-400">
+                        <span className="text-xs font-mono text-[#718096]">
                           Session ID: {selectedTest.id}
                         </span>
-                        <span className={`text-xs font-mono px-2.5 py-0.5 rounded border font-semibold ${
+                        <span className={`text-xs font-sans px-2.5 py-0.5 rounded font-semibold ${
                           selectedTest.score >= 80
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400'
-                            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400'
+                            ? 'bg-[#F0FDF4] text-[#15803D] dark:bg-emerald-950/40 dark:text-emerald-400'
+                            : 'bg-[#FFF7ED] text-[#C2410C] dark:bg-amber-950/40 dark:text-amber-400'
                         }`}>
                           Score: {selectedTest.score}% • {selectedTest.correctCount}/{selectedTest.totalQuestions} Solved
                         </span>
                       </div>
-                      <h2 className={`text-xl font-bold mt-1 ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                      <h2 className={`text-xl font-bold mt-1 ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
                         {selectedTest.title}
                       </h2>
-                      <p className={`text-xs mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <p className={`text-xs mt-1 ${isLight ? 'text-[#526176]' : 'text-slate-400'}`}>
                         Conducted on {new Date(selectedTest.timestamp).toLocaleString()} • Duration: {Math.floor(selectedTest.durationSeconds / 60)}m {selectedTest.durationSeconds % 60}s
                       </p>
                     </div>
 
-                    {/* Test Session Notes Section */}
-                    <div className={`p-4 rounded-xl border ${
-                      isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-800/40 border-slate-700/60'
-                    }`}>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-blue-500" />
-                          <h4 className={`text-xs font-semibold uppercase tracking-wider font-mono ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                            Notes Recorded on this Test ({selectedTest.notes?.length || 0})
-                          </h4>
-                        </div>
-                        <button
-                          onClick={() => handleOpenAddNote(selectedTest.id)}
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium font-mono"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Note to Session</span>
-                        </button>
-                      </div>
+                    {/* Single Session Diagnostic Notes Summary */}
+                    {(() => {
+                      const sessionNote = selectedTest.notes?.[0];
+                      return (
+                        <div className={`p-5 rounded-xl border transition-colors ${
+                          isLight ? 'bg-white border-[#D7DEE7] shadow-[0_1px_2px_rgba(15,23,42,0.04)]' : 'bg-slate-900 border-slate-800'
+                        }`}>
+                          <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-[#2563EB]" />
+                              <h4 className={`text-xs font-bold uppercase tracking-wider font-sans ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
+                                Session Diagnostic Notes Summary
+                              </h4>
+                            </div>
+                            {sessionNote ? (
+                              <button
+                                onClick={() => handleOpenEditNote(sessionNote)}
+                                className="text-xs text-[#2563EB] hover:text-[#1D4ED8] dark:text-blue-400 flex items-center gap-1 font-medium"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit Summary</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenAddNote(selectedTest.id)}
+                                className="text-xs text-[#2563EB] hover:text-[#1D4ED8] dark:text-blue-400 flex items-center gap-1 font-medium"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Create Notes Summary</span>
+                              </button>
+                            )}
+                          </div>
 
-                      {selectedTest.notes && selectedTest.notes.length > 0 ? (
-                        <div className="space-y-2.5">
-                          {selectedTest.notes.map((note) => (
-                            <div
-                              key={note.id}
-                              className={`p-3 rounded-lg border transition ${
-                                isLight ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-900 border-slate-800'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <h5 className={`text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                                  {note.title}
+                          {sessionNote ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h5 className={`text-sm font-bold ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
+                                  {sessionNote.title}
                                 </h5>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <button
-                                    onClick={() => handleOpenEditNote(note)}
-                                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                                    title="Edit note"
-                                  >
-                                    <Edit3 className="w-3 h-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteNote(note.id)}
-                                    className="p-1 text-slate-400 hover:text-rose-500"
-                                    title="Delete note"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </div>
+                                <span className={`text-[11px] font-mono ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
+                                  {new Date(sessionNote.createdAt).toLocaleDateString()}
+                                </span>
                               </div>
-                              <p className={`text-xs mt-1 leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
-                                {note.content}
-                              </p>
-                              {note.tags && note.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {note.tags.map((tag, idx) => (
+
+                              {/* Structured Notes Summary: Mistakes in bold & elongated, other parts normal */}
+                              <StructuredSessionNoteRenderer content={sessionNote.content} isLight={isLight} />
+
+                              {sessionNote.tags && sessionNote.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                  {sessionNote.tags.map((tag, idx) => (
                                     <span
                                       key={idx}
-                                      className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                                      className="text-[10px] font-sans px-2 py-0.5 rounded bg-[#EEF2F6] text-[#526176] dark:bg-slate-800 dark:text-slate-300"
                                     >
                                       #{tag}
                                     </span>
@@ -505,14 +587,14 @@ export const PastTestsView: React.FC = () => {
                                 </div>
                               )}
                             </div>
-                          ))}
+                          ) : (
+                            <p className={`text-xs italic ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                              No diagnostic notes summary recorded for this session yet.
+                            </p>
+                          )}
                         </div>
-                      ) : (
-                        <p className={`text-xs italic ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                          No specific notes recorded for this session yet. Click &quot;Add Note to Session&quot; to save key observations.
-                        </p>
-                      )}
-                    </div>
+                      );
+                    })()}
 
                     {/* Question Breakdown List */}
                     <div className="space-y-4">
@@ -714,11 +796,9 @@ export const PastTestsView: React.FC = () => {
                       {note.title}
                     </h4>
 
-                    <p className={`text-xs mt-2 leading-relaxed whitespace-pre-wrap ${
-                      isLight ? 'text-slate-600' : 'text-slate-300'
-                    }`}>
-                      {note.content}
-                    </p>
+                    <div className="mt-3">
+                      <StructuredSessionNoteRenderer content={note.content} isLight={isLight} />
+                    </div>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">

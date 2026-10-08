@@ -13,6 +13,13 @@ router.get('/', (req: Request, res: Response) => {
   res.json(tests);
 });
 
+// GET all past tests for specific user ID
+router.get('/user/:userId', (req: Request, res: Response) => {
+  const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+  const tests = TestService.getTests(userId);
+  res.json(tests);
+});
+
 // GET single test session with full details and notes
 router.get('/:id', (req: Request, res: Response) => {
   const testId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

@@ -8,10 +8,13 @@ import {
   UserProfile,
   PastTestSession,
   TestNote,
-  FullUserData
+  FullUserData,
+  DependencyGraphData
 } from '../types';
 import { 
   CONCEPTS, 
+  CANONICAL_TIERS,
+  CANONICAL_EDGES,
   QUESTIONS_POOL, 
   MISCONCEPTIONS, 
   RECENT_ACTIVITIES 
@@ -153,6 +156,23 @@ class NeuronotesApiService {
     } catch (e) {
       console.warn('Backend user switch notification failed, client state updated', e);
     }
+  }
+
+  /**
+   * Fetch complete knowledge dependency graph with 4 tiers and explicit directed prerequisite edges
+   */
+  async getDependencyGraph(): Promise<DependencyGraphData> {
+    const fallbackData: DependencyGraphData = {
+      tiers: CANONICAL_TIERS,
+      concepts: CONCEPTS,
+      edges: CANONICAL_EDGES,
+      stats: {
+        totalConcepts: CONCEPTS.length,
+        totalEdges: CANONICAL_EDGES.length,
+        tiersCount: Object.keys(CANONICAL_TIERS).length
+      }
+    };
+    return this.request<DependencyGraphData>('/api/concepts/graph', { method: 'GET' }, fallbackData);
   }
 
   /**

@@ -18,6 +18,18 @@ router.get('/', (req: Request, res: Response) => {
   res.json(notes);
 });
 
+// GET all notes for specific user ID (with optional filters)
+router.get('/user/:userId', (req: Request, res: Response) => {
+  const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+  const { testId, conceptId, search } = req.query;
+  const notes = TestService.getNotes(userId, {
+    testId: testId as string,
+    conceptId: conceptId as string,
+    search: search as string
+  });
+  res.json(notes);
+});
+
 // POST create a note
 router.post('/', (req: Request, res: Response) => {
   const { testId, title, content, conceptId, conceptName, tags } = req.body;

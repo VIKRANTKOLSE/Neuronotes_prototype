@@ -16,6 +16,8 @@ export interface Concept {
   name: string;
   subject: string;
   domain: string;
+  tier?: number;
+  tierName?: string;
   estimatedMastery: number; // 0-100
   confidenceScore: number;  // 0-100 (1 - variance)
   status: MasteryStatus;
@@ -35,6 +37,25 @@ export interface Concept {
   recommendedAction: string;
   position: { x: number; y: number };
   level: number;
+}
+
+export interface PrerequisiteEdge {
+  source: string;
+  target: string;
+  sourceName: string;
+  targetName: string;
+  type: 'prerequisite';
+}
+
+export interface DependencyGraphData {
+  tiers: Record<string, string[]>;
+  concepts: Concept[];
+  edges: PrerequisiteEdge[];
+  stats: {
+    totalConcepts: number;
+    totalEdges: number;
+    tiersCount: number;
+  };
 }
 
 export interface QuestionOption {

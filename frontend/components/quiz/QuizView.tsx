@@ -465,7 +465,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
                     confidence: 'Moderate',
                     recommendedAction: 'Review the relationship ΔG° = -nFE°cell with sign invariance exercises.',
                     targetedQuestionsCount: 3,
-                    affectedPrerequisites: ['gibbs-04', 'cell-pot-05']
+                    affectedPrerequisites: ['crystal-field-splitting-in-octahedral-field', 'ligand-field-theory']
                   })}
                   className={`px-3.5 py-2 rounded-lg text-xs font-mono font-medium border whitespace-nowrap transition ${
                     isLight 

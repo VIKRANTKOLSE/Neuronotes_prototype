@@ -62,47 +62,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar Container */}
       <aside className={`fixed top-0 bottom-0 left-0 w-64 z-50 flex flex-col transition-all duration-200 lg:translate-x-0 border-r ${
         isLight 
-          ? 'bg-white border-slate-200 text-slate-800' 
+          ? 'bg-[#F8FAFC] border-[#DCE3EA] text-[#172033]' 
           : 'bg-slate-950 border-slate-800/90 text-slate-100'
       } ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Brand Header */}
         <div className={`h-16 flex items-center px-6 border-b gap-3 ${
-          isLight ? 'border-slate-200' : 'border-slate-800/80'
+          isLight ? 'border-[#DCE3EA]' : 'border-slate-800/80'
         }`}>
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
             isLight 
-              ? 'bg-blue-50 text-blue-600 border-blue-200' 
+              ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]' 
               : 'bg-blue-600/20 text-blue-400 border-blue-500/40'
           }`}>
             <BookOpen className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className={`font-semibold tracking-tight text-base font-sans ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+              <span className={`font-semibold tracking-tight text-base font-sans ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
                 Neuronotes
               </span>
               <span className={`text-[10px] font-mono uppercase px-1 rounded border ${
                 isLight 
-                  ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]' 
                   : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
               }`}>
                 MIRT
               </span>
             </div>
-            <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-[11px] font-mono ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
               Psychometric Engine
             </p>
           </div>
         </div>
 
         {/* Navigation Links */}
-        <div className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
-          <div className={`px-3 pb-2 text-[11px] uppercase font-mono tracking-wider font-medium ${
-            isLight ? 'text-slate-400' : 'text-slate-500'
+        <div className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+          <div className={`px-3 pb-2 text-[11px] uppercase font-sans tracking-wider font-semibold ${
+            isLight ? 'text-[#718096]' : 'text-slate-500'
           }`}>
-            Navigation
+            Platform
           </div>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -113,99 +113,94 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 key={item.href}
                 href={item.href}
                 onClick={onCloseMobile}
-                className={`relative w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left group ${
+                className={`relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left group ${
                   isActive 
                     ? (isLight 
-                        ? 'bg-slate-100 text-slate-900 font-medium' 
+                        ? 'bg-[#EEF2F6] text-[#172033] font-medium' 
                         : 'bg-slate-800/80 text-slate-100 font-medium') 
                     : (isLight 
-                        ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-50' 
+                        ? 'text-[#526176] hover:text-[#172033] hover:bg-[#EEF2F6]/60' 
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60')
                 }`}
               >
                 {/* Thin accent indicator for active state */}
                 {isActive && (
-                  <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-blue-600 rounded-r" />
+                  <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[#2563EB] rounded-r" />
                 )}
                 <Icon className={`w-4 h-4 shrink-0 transition-colors ${
                   isActive 
-                    ? (isLight ? 'text-blue-600' : 'text-blue-400') 
-                    : (isLight ? 'text-slate-400 group-hover:text-slate-600' : 'text-slate-500 group-hover:text-slate-300')
+                    ? (isLight ? 'text-[#2563EB]' : 'text-blue-400') 
+                    : (isLight ? 'text-[#718096] group-hover:text-[#172033]' : 'text-slate-500 group-hover:text-slate-300')
                 }`} />
                 <span className="flex-1 truncate">{item.label}</span>
-                {isActive && (
-                  <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-slate-400' : 'text-slate-500'}`} />
-                )}
               </Link>
             );
           })}
         </div>
 
-        {/* Bottom Mode Controls (Research Mode only - Theme toggle is in top header) */}
-        <div className="p-3 mx-2 mb-2">
-          <div className={`p-2.5 rounded-lg border flex items-center justify-between ${
-            isLight ? 'bg-slate-50/80 border-slate-200/80' : 'bg-slate-900/60 border-slate-800/80'
-          }`}>
-            <div className="flex items-center gap-2">
-              <Sliders className={`w-3.5 h-3.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
-              <div>
-                <p className={`text-xs font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
-                  Research Mode
-                </p>
-                <p className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Expose θ, Fisher I(θ)
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={onToggleResearcherMode}
-              className={`w-8 h-4.5 rounded-full p-0.5 transition-colors relative flex items-center ${
-                researcherMode ? 'bg-blue-600' : (isLight ? 'bg-slate-300' : 'bg-slate-700')
-              }`}
-              title="Toggle Psychometric Item Parameters"
-              aria-label="Toggle Research Mode"
-            >
-              <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                researcherMode ? 'translate-x-3.5' : 'translate-x-0'
-              }`} />
-            </button>
-          </div>
-        </div>
-
-        {/* Footer: User profile & Active Model status */}
-        <div className={`p-3 border-t space-y-2 ${
-          isLight ? 'border-slate-200 bg-white' : 'border-slate-800 bg-slate-950'
+        {/* Integrated Research Mode Control (seamless system control, not a floating card) */}
+        <div className={`px-4 py-3 border-t flex items-center justify-between ${
+          isLight ? 'border-[#D7DEE7]' : 'border-slate-800'
         }`}>
           <div className="flex items-center gap-2.5">
-            <div className={`w-7 h-7 rounded-md border flex items-center justify-center text-xs font-mono font-medium ${
+            <Sliders className={`w-4 h-4 ${isLight ? 'text-[#526176]' : 'text-slate-400'}`} />
+            <div>
+              <p className={`text-xs font-medium ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>
+                Research Mode
+              </p>
+              <p className={`text-[10px] ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
+                Expose θ, Fisher I(θ)
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onToggleResearcherMode}
+            className={`w-8 h-4.5 rounded-full p-0.5 transition-colors relative flex items-center ${
+              researcherMode ? 'bg-[#2563EB]' : (isLight ? 'bg-[#CBD5E1]' : 'bg-slate-700')
+            }`}
+            title="Toggle Psychometric Item Parameters"
+            aria-label="Toggle Research Mode"
+          >
+            <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+              researcherMode ? 'translate-x-3.5' : 'translate-x-0'
+            }`} />
+          </button>
+        </div>
+
+        {/* Footer: User profile & Switcher (visually integrated) */}
+        <div className={`px-4 py-3 border-t space-y-2.5 ${
+          isLight ? 'border-[#D7DEE7]' : 'border-slate-800'
+        }`}>
+          <div className="flex items-center gap-2.5">
+            <div className={`w-7 h-7 rounded-md border flex items-center justify-center text-xs font-semibold ${
               currentUser?.isNewUser
-                ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300'
+                ? 'bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA] dark:bg-amber-900/30 dark:text-amber-300'
                 : (isLight 
-                    ? 'bg-slate-100 text-slate-700 border-slate-200' 
+                    ? 'bg-[#EEF2F6] text-[#526176] border-[#D7DEE7]' 
                     : 'bg-slate-800 text-slate-300 border-slate-700')
             }`}>
               {currentUser?.avatarInitials || 'VK'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`text-xs font-medium truncate ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+              <p className={`text-xs font-medium truncate ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>
                 {currentUser?.name || 'Vikrant Kolse'}
               </p>
-              <p className={`text-[10px] font-mono truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                {currentUser?.isNewUser ? 'Baseline • 0 items' : `Model active • ${currentUser?.overallMastery ?? 71}% mastery`}
+              <p className={`text-[10px] font-mono truncate ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
+                {currentUser?.isNewUser ? 'Baseline · 0 items' : `Calibrated · ${currentUser?.overallMastery ?? 71}%`}
               </p>
             </div>
           </div>
 
           <Link
             href="/login"
-            className={`w-full py-1.5 px-2 rounded-lg text-[11px] font-mono border transition flex items-center justify-center gap-1.5 ${
+            className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-medium border transition flex items-center justify-center gap-1.5 ${
               isLight 
-                ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200' 
+                ? 'bg-white hover:bg-[#EEF2F6] text-[#526176] hover:text-[#172033] border-[#D7DEE7]' 
                 : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
             }`}
           >
-            <LogIn className="w-3 h-3 text-blue-500" />
-            <span>Switch / Sign In</span>
+            <LogIn className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span>Switch Learner</span>
           </Link>
         </div>
       </aside>

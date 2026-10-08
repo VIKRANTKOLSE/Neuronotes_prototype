@@ -2,10 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Calm scientific instrument / premium analytical workspace tokens */
+  --background: #F1F4F7;
+  --surface: #F8FAFC;
+  --surface-elevated: #FFFFFF;
+  --surface-secondary: #EEF2F6;
+  --surface-card: #FFFFFF;
+  
+  --border: #D7DEE7;
+  --border-strong: #C5D0DC;
+  --border-header: #D7DEE7;
+  --border-separator: #EEF2F6;
+  
+  --text-primary: #172033;
+  --text-secondary: #526176;
+  --text-muted: #718096;
+  --text-disabled: #94A3B8;
+  
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-soft: #EFF6FF;
+  --primary-border: #BFDBFE;
+  
+  --header-bg: #F8FAFC;
+  --sidebar-bg: #F8FAFC;
+  --sidebar-active: #EEF2F6;
+  
+  --track-progress: #D7DEE7;
+  --shadow-subtle: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.dark {
+  --background: #0B0F19;
+  --surface: #0F172A;
+  --surface-elevated: #131D31;
+  --surface-secondary: #1E293B;
+  --surface-card: #131D31;
+  
+  --border: #1E293B;
+  --border-strong: #334155;
+  --border-header: rgba(30, 41, 59, 0.8);
+  --border-separator: #1E293B;
+  
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-disabled: #475569;
+  
+  --primary: #3B82F6;
+  --primary-hover: #2563EB;
+  --primary-soft: rgba(37, 99, 235, 0.15);
+  --primary-border: rgba(59, 130, 246, 0.3);
+  
+  --header-bg: rgba(11, 15, 25, 0.85);
+  --sidebar-bg: #0B0F19;
+  --sidebar-active: rgba(30, 41, 59, 0.8);
+  
+  --track-progress: #1E293B;
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
 @layer base {
   body {
     @apply antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-color: var(--background);
+    color: var(--text-primary);
   }
 }
 
@@ -16,14 +79,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.4);
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.5);
+  background: var(--border-strong);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.8);
+  background: var(--text-muted);
 }

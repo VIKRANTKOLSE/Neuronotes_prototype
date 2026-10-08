@@ -56,6 +56,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [currentUser?.id, userRefreshTrigger]);
 
   const isNew = currentUser?.isNewUser ?? false;
+  const targetConceptId = isNew ? 'effective-nuclear-charge' : 'crystal-field-stabilization-energy';
   const firstName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Vikrant';
   const primaryMisconception = misconceptions[0];
 
@@ -66,158 +67,171 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* PAGE HEADER & HIGH-VISIBILITY MASTERY KPI */}
-      <section className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wider">
+      {/* LEVEL 1: CONTEXT HEADER & COMPACT ESTIMATED MASTERY PANEL */}
+      <section className={`flex flex-col md:flex-row md:items-end justify-between gap-5 pb-4 border-b ${
+        isLight ? 'border-[#D7DEE7]' : 'border-slate-800'
+      }`}>
+        <div className="space-y-1.5">
+          {/* Subtle contextual breadcrumb, no boxed pills */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className={`font-semibold uppercase tracking-wider text-[11px] ${
+              isLight ? 'text-[#526176]' : 'text-slate-400'
+            }`}>
               Chemistry
             </span>
-            <span className="text-slate-300 dark:text-slate-700">•</span>
-            <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
-              isLight 
-                ? 'bg-slate-100 text-slate-700 border-slate-200' 
-                : 'bg-slate-800 text-slate-300 border-slate-700'
-            }`}>
+            <span className={isLight ? 'text-[#CBD5E1]' : 'text-slate-700'}>•</span>
+            <span className={isLight ? 'text-[#718096]' : 'text-slate-400'}>
               Physical & Electrochemistry
             </span>
             {isNew && (
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                New Learner Profile
-              </span>
+              <>
+                <span className={isLight ? 'text-[#CBD5E1]' : 'text-slate-700'}>•</span>
+                <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${
+                  isLight 
+                    ? 'bg-[#FFF7ED] text-[#C2410C]' 
+                    : 'bg-amber-950/40 text-amber-300'
+                }`}>
+                  New Learner Profile
+                </span>
+              </>
             )}
           </div>
-          <h2 className={`text-2xl font-semibold tracking-tight ${
-            isLight ? 'text-slate-900' : 'text-slate-100'
+          <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${
+            isLight ? 'text-[#172033]' : 'text-slate-100'
           }`}>
             Good evening, {firstName}
-          </h2>
-          <p className={`text-xs max-w-xl leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+          </h1>
+          <p className={`text-sm max-w-xl leading-relaxed ${isLight ? 'text-[#526176]' : 'text-slate-400'}`}>
             {isNew 
-              ? 'Welcome to Neuronotes. Complete your initial baseline diagnostic session to establish calibrated ability estimates across the prerequisite DAG.'
-              : 'Neuronotes has updated your psychometric model. Your next targeted actions are calculated to minimize posterior uncertainty and address emerging misconceptions.'}
+              ? 'Complete your baseline diagnostic session to calibrate latent ability estimates across the prerequisite DAG.'
+              : 'Neuronotes has updated your psychometric model. Your next targeted actions prioritize concepts with high posterior uncertainty to minimize diagnostic variance.'}
           </p>
         </div>
 
-        {/* High-visibility Mastery KPI */}
-        <div className={`p-4 rounded-xl border shrink-0 min-w-[240px] ${
+        {/* Level 2: Compact Estimated Mastery Panel */}
+        <div className={`p-4 sm:p-5 rounded-xl border shrink-0 min-w-[230px] transition-colors ${
           isLight 
-            ? 'bg-white border-slate-200 shadow-sm' 
+            ? 'bg-white border-[#D7DEE7] shadow-[0_1px_2px_rgba(15,23,42,0.04)]' 
             : 'bg-slate-900 border-slate-800'
         }`}>
-          <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 uppercase tracking-wider mb-1">
+          <div className={`flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${
+            isLight ? 'text-[#718096]' : 'text-slate-400'
+          }`}>
             <span>Estimated Mastery</span>
             <span className={`w-2 h-2 rounded-full ${isNew ? 'bg-amber-500' : 'bg-emerald-500'}`} title="Model status" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-3xl font-semibold tabular-nums tracking-tight ${
-              isLight ? 'text-slate-900' : 'text-slate-100'
+          <div className="flex items-baseline gap-2.5">
+            <span className={`text-4xl font-bold tabular-nums tracking-tight ${
+              isLight ? 'text-[#172033]' : 'text-slate-100'
             }`}>
               {isNew ? 'Withheld' : `${currentUser?.overallMastery ?? 71}%`}
             </span>
-            <span className={`text-xs font-medium ${
-              isNew ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+              isNew 
+                ? (isLight ? 'text-[#C2410C] bg-[#FFF7ED]' : 'text-amber-400 bg-amber-950/40')
+                : (isLight ? 'text-[#15803D] bg-[#F0FDF4]' : 'text-emerald-400 bg-emerald-950/40')
             }`}>
               {isNew ? 'Baseline' : 'Calibrated'}
             </span>
           </div>
-          <p className="text-[11px] font-mono text-slate-500 mt-1">
+          <p className={`text-xs font-mono mt-1.5 ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
             {isNew 
-              ? '9 concepts unprobed • Prior σ = 1.20'
-              : `${currentUser?.itemsAnswered ?? 54} items • ${currentUser?.reliabilityScore ?? 89}% reliability`}
+              ? '58 concepts unprobed · Prior σ = 1.20'
+              : `${currentUser?.itemsAnswered ?? 54} items · ${currentUser?.reliabilityScore ?? 89}% reliability`}
           </p>
         </div>
       </section>
 
-      {/* PRIMARY CARD: NEXT BEST ACTION */}
-      <section className={`relative rounded-xl border p-5 lg:p-6 shadow-sm border-l-4 border-l-blue-600 transition-colors ${
+      {/* PRIMARY WORKSPACE: NEXT BEST ACTION (COMPACT, UNIFIED DECISION WORKSPACE) */}
+      <section className={`rounded-xl border border-l-[3px] border-l-[#2563EB] p-5 sm:p-6 transition-colors ${
         isLight 
-          ? 'bg-white border-slate-200 text-slate-800' 
-          : 'bg-slate-900 border-slate-800 text-slate-100'
+          ? 'bg-white border-[#D7DEE7] shadow-[0_1px_2px_rgba(15,23,42,0.04)]' 
+          : 'bg-slate-900 border-slate-800'
       }`}>
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+        {/* Top header row: unboxed label & telemetry */}
+        <div className="flex items-center justify-between gap-4 pb-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2563EB] flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" />
+            Next Best Action
+          </span>
+          <div className="flex items-center gap-3">
+            <span className={`text-xs font-mono font-medium ${
+              isLight ? 'text-[#7C3AED]' : 'text-purple-300'
+            }`}>
+              {isNew ? '95% prior uncertainty' : '63% posterior uncertainty'}
+            </span>
+            <span className={`text-xs hidden sm:inline ${
+              isLight ? 'text-[#718096]' : 'text-slate-500'
+            }`}>
+              · Max information gain
+            </span>
+          </div>
+        </div>
+
+        {/* Content body and CTAs in efficient layout */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-1">
           <div className="space-y-3 max-w-2xl">
-            {/* Tag & Uncertainty Callout */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-semibold border ${
-                isLight 
-                  ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                  : 'bg-blue-950/50 text-blue-300 border-blue-800'
-              }`}>
-                <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                NEXT BEST ACTION
-              </span>
-
-              {/* Visually prominent Posterior Uncertainty callout */}
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-mono font-medium border ${
-                isLight 
-                  ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                  : 'bg-purple-950/40 text-purple-300 border-purple-800'
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-                {isNew ? '95% prior uncertainty' : '63% posterior uncertainty'}
-              </span>
-
-              <span className="text-xs font-mono text-slate-400 hidden sm:inline ml-auto">
-                Max information gain
-              </span>
-            </div>
-
-            {/* Dominant Concept Title & Diagnostic Rationale */}
+            {/* Concept Title & Diagnostic Rationale */}
             <div>
-              <h3 className={`text-xl lg:text-2xl font-semibold tracking-tight ${
-                isLight ? 'text-slate-900' : 'text-slate-100'
+              <h2 className={`text-2xl font-bold tracking-tight ${
+                isLight ? 'text-[#172033]' : 'text-slate-100'
               }`}>
-                {isNew ? 'Thermodynamics Foundations' : 'Gibbs Energy (ΔG)'}
-              </h3>
-              <p className={`text-xs lg:text-sm mt-1.5 leading-relaxed ${
-                isLight ? 'text-slate-600' : 'text-slate-300'
+                {isNew ? 'Effective Nuclear Charge' : 'Crystal Field Stabilization Energy'}
+              </h2>
+              <p className={`text-sm mt-1 leading-relaxed ${
+                isLight ? 'text-[#526176]' : 'text-slate-300'
               }`}>
                 {isNew
-                  ? 'As a new learner, your knowledge graph is uncalibrated. Administering foundational state function diagnostic items establishes your initial latent ability θ and gates downstream concepts.'
-                  : 'Your current estimate for Gibbs Energy has high posterior uncertainty (63% variance). Probing this concept is required before downstream evaluation of dependent concepts.'}
+                  ? 'As a new learner, your knowledge graph is uncalibrated. Administering Tier 1 Foundation items for Effective Nuclear Charge establishes your initial latent ability θ and gates downstream periodic trends.'
+                  : 'Your current estimate for Crystal Field Stabilization Energy has elevated posterior uncertainty (55% confidence). Probing this concept is required before downstream evaluation of High-Spin vs Low-Spin Complexes.'}
               </p>
             </div>
 
-            {/* Graph Prerequisite Dependency Context */}
-            <div className={`p-2.5 rounded-lg border text-xs font-mono flex items-center gap-2 ${
-              isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-300'
+            {/* Dependency: Clean subtle inline band, not an independent box */}
+            <div className={`text-xs flex flex-wrap items-center gap-2 py-1.5 px-3 rounded-lg ${
+              isLight ? 'bg-[#EEF2F6] text-[#526176]' : 'bg-slate-950/70 text-slate-300'
             }`}>
-              <span className="text-slate-400">Dependency:</span>
-              <span className="font-semibold text-blue-600 dark:text-blue-400">
-                {isNew ? 'Root Concept (Level 1)' : 'Gibbs Energy'}
+              <span className={`font-semibold ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>
+                Dependency:
               </span>
-              <span>→ Gates:</span>
-              <span className="text-slate-600 dark:text-slate-400">
-                {isNew ? 'Enthalpy (ΔH) & Entropy (ΔS)' : 'Cell Potential & Equilibrium Constant'}
+              <span className="font-semibold text-[#2563EB] dark:text-blue-400">
+                {isNew ? 'Tier 1 (Foundation)' : 'Tier 4 (Complex Systems)'}
+              </span>
+              <span className={isLight ? 'text-[#718096]' : 'text-slate-400'}>
+                {isNew ? '→ Direct Prerequisite For:' : '← Requires Prerequisite:'}
+              </span>
+              <span>
+                {isNew 
+                  ? 'Atomic Radius, Ionization Enthalpy & Electronegativity Trends' 
+                  : 'Crystal Field Splitting in Octahedral Field & Ligand Field Theory'}
               </span>
             </div>
 
-            {/* Useful Action Metadata */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400 pt-0.5">
-              <span className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
-                <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            {/* Action Metadata: unboxed inline typography */}
+            <div className={`flex flex-wrap items-center gap-2.5 text-xs pt-0.5 ${
+              isLight ? 'text-[#718096]' : 'text-slate-400'
+            }`}>
+              <span className={`flex items-center gap-1.5 font-medium ${
+                isLight ? 'text-[#172033]' : 'text-slate-200'
+              }`}>
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#2563EB] dark:text-blue-400" />
                 3 targeted questions
               </span>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span>·</span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
                 ~7 min estimated
               </span>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
-              <span className={`px-2 py-0.5 rounded text-[11px] font-mono border ${
-                isLight 
-                  ? 'text-purple-800 bg-purple-50 border-purple-200' 
-                  : 'text-purple-300 bg-purple-950/40 border-purple-800'
-              }`}>
-                Status: Uncertain (Needs Probing)
+              <span>·</span>
+              <span className={`font-medium ${isLight ? 'text-[#7C3AED]' : 'text-purple-300'}`}>
+                Uncertain (Needs Probing)
               </span>
             </div>
 
             {/* Research Mode Psychometric Parameters */}
             {researcherMode && (
               <div className={`pt-2 text-xs font-mono border-t flex flex-wrap items-center gap-4 ${
-                isLight ? 'border-slate-200 text-blue-700' : 'border-slate-800 text-blue-300'
+                isLight ? 'border-[#EEF2F6] text-[#1D4ED8]' : 'border-slate-800 text-blue-300'
               }`}>
                 <span>Fisher Information I(θ): 1.48</span>
                 <span>Expected Δσ(θ): -0.14</span>
@@ -226,20 +240,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             )}
           </div>
 
-          {/* Action CTAs */}
+          {/* Action CTAs: cleanly aligned */}
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0 self-start sm:self-auto lg:self-center">
             <Link
-              href="/quiz"
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition shadow-sm group"
+              href={`/quiz?conceptId=${encodeURIComponent(targetConceptId)}`}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium text-sm transition"
             >
               <span>Start 3 Questions →</span>
             </Link>
             <button
-              onClick={() => handleInspectConcept('gibbs-04')}
+              onClick={() => handleInspectConcept(targetConceptId)}
               className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium border transition ${
                 isLight 
-                  ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm' 
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  ? 'bg-transparent hover:bg-[#EEF2F6] text-[#526176] hover:text-[#172033] border-[#D7DEE7]' 
+                  : 'bg-transparent hover:bg-slate-800 text-slate-300 border-slate-700'
               }`}
             >
               Inspect Concept Details
@@ -248,121 +262,129 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* KNOWLEDGE SECTION: UNIFIED DIAGNOSTIC CONTAINER */}
-      <section className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+      {/* KNOWLEDGE STATE BREAKDOWN: ANALYTICAL DISTRIBUTION */}
+      <section className="space-y-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
           <div>
-            <h3 className={`text-xs font-semibold uppercase tracking-wider font-mono ${
-              isLight ? 'text-slate-700' : 'text-slate-300'
+            <h3 className={`text-base font-bold tracking-tight ${
+              isLight ? 'text-[#172033]' : 'text-slate-100'
             }`}>
               Knowledge State Breakdown
             </h3>
-            <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-xs ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
               Probabilistic mastery estimates calibrated across 45 active concepts
             </p>
           </div>
-          <div className="flex items-center gap-2 font-mono text-xs text-slate-500">
-            <span>Subject: Chemistry</span>
-            <span>•</span>
-            <span className="font-medium text-slate-700 dark:text-slate-300">Physical & Electrochemistry</span>
+          <div className={`text-xs ${isLight ? 'text-[#718096]' : 'text-slate-500'}`}>
+            Domain: <span className={`font-semibold ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>Physical & Electrochemistry</span>
           </div>
         </div>
 
-        {/* Single Coherent Diagnostic Summary Container */}
-        <div className={`p-5 rounded-xl border space-y-4 ${
-          isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+        {/* Analytical Distribution Card */}
+        <div className={`p-5 rounded-xl border transition-colors ${
+          isLight 
+            ? 'bg-white border-[#D7DEE7] shadow-[0_1px_2px_rgba(15,23,42,0.04)]' 
+            : 'bg-slate-900 border-slate-800'
         }`}>
-          <div className="flex justify-between items-center text-xs font-mono">
-            <span className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-              Domain: Physical & Electrochemistry
+          <div className="flex justify-between items-center text-xs pb-3">
+            <span className={`font-semibold ${isLight ? 'text-[#526176]' : 'text-slate-300'}`}>
+              Active Concept Distribution
             </span>
-            <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>
-              Reliability Index: {isNew ? '12% (Sparse baseline)' : '89% (Calibrated)'}
+            <span className={`font-mono text-xs ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
+              Reliability Index: <strong className={isLight ? 'text-[#172033]' : 'text-slate-100'}>{isNew ? '12% (Sparse baseline)' : '89% (Calibrated)'}</strong>
             </span>
           </div>
 
-          {/* Segmented Distribution Bar */}
-          <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+          {/* Segmented Distribution Bar: Primary Visual Summary */}
+          <div className={`h-2.5 w-full rounded-full overflow-hidden flex ${
+            isLight ? 'bg-[#EEF2F6]' : 'bg-slate-800'
+          }`}>
             {isNew ? (
-              <div style={{ width: '100%' }} className="bg-slate-400 dark:bg-slate-600 transition-opacity" title="Insufficient Evidence: 9 concepts (100%)" />
+              <div style={{ width: '100%' }} className="bg-slate-400" title="Insufficient Evidence: 9 concepts (100%)" />
             ) : (
               <>
-                <div style={{ width: '53.3%' }} className="bg-emerald-500 transition-opacity" title="Strong: 24 concepts (53%)" />
-                <div style={{ width: '24.4%' }} className="bg-amber-500 transition-opacity" title="Developing: 11 concepts (24%)" />
-                <div style={{ width: '13.3%' }} className="bg-purple-500 transition-opacity" title="Uncertain: 6 concepts (13%)" />
-                <div style={{ width: '8.9%' }} className="bg-rose-500 transition-opacity" title="Needs attention: 4 concepts (9%)" />
+                <div style={{ width: '53.3%' }} className="bg-emerald-500" title="Strong: 24 concepts (53%)" />
+                <div style={{ width: '24.4%' }} className="bg-amber-500" title="Developing: 11 concepts (24%)" />
+                <div style={{ width: '13.3%' }} className="bg-purple-500" title="Uncertain: 6 concepts (13%)" />
+                <div style={{ width: '8.9%' }} className="bg-rose-500" title="Needs attention: 4 concepts (9%)" />
               </>
             )}
           </div>
 
-          {/* 4 Lightweight Metric Columns */}
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800 pt-1">
+          {/* 4 Analytical Metrics Row (Seamless Grid, not 4 cards) */}
+          <div className={`grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x ${
+            isLight ? 'divide-[#EEF2F6]' : 'divide-slate-800'
+          } pt-5 mt-2`}>
             {/* Strong */}
-            <div className="p-3 md:px-4 md:py-1 space-y-1">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Strong</span>
+            <div className="p-2 md:px-4 md:py-0 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#526176] dark:text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span>Strong</span>
               </div>
-              <p className={`text-2xl font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                {isNew ? 0 : 24} <span className="text-xs font-normal text-slate-500">concepts</span>
+              <p className={`text-2xl font-bold tabular-nums ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
+                {isNew ? 0 : 24} <span className="text-xs font-normal text-[#718096]">concepts</span>
               </p>
-              <p className="text-[11px] text-slate-500">{isNew ? 'No observations yet' : 'High mastery, narrow posterior'}</p>
+              <p className="text-xs text-[#718096]">
+                {isNew ? 'No observations yet' : 'High mastery, narrow posterior'}
+              </p>
             </div>
 
             {/* Developing */}
-            <div className="p-3 md:px-4 md:py-1 space-y-1">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Developing</span>
+            <div className="p-2 md:px-4 md:py-0 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#526176] dark:text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                <span>Developing</span>
               </div>
-              <p className={`text-2xl font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                {isNew ? 0 : 11} <span className="text-xs font-normal text-slate-500">concepts</span>
+              <p className={`text-2xl font-bold tabular-nums ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
+                {isNew ? 0 : 11} <span className="text-xs font-normal text-[#718096]">concepts</span>
               </p>
-              <p className="text-[11px] text-slate-500">{isNew ? 'Awaiting test items' : 'Moderate ability, consolidating'}</p>
+              <p className="text-xs text-[#718096]">
+                {isNew ? 'Awaiting test items' : 'Moderate ability, consolidating'}
+              </p>
             </div>
 
             {/* Uncertain */}
-            <div className="p-3 md:px-4 md:py-1 space-y-1">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-purple-500" />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Uncertain</span>
+            <div className="p-2 md:px-4 md:py-0 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#526176] dark:text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                <span>Uncertain</span>
               </div>
-              <p className={`text-2xl font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                {isNew ? 0 : 6} <span className="text-xs font-normal text-slate-500">concepts</span>
+              <p className={`text-2xl font-bold tabular-nums ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
+                {isNew ? 0 : 6} <span className="text-xs font-normal text-[#718096]">concepts</span>
               </p>
-              <p className="text-[11px] text-slate-500">{isNew ? 'Prior unprobed' : 'Needs probing observations'}</p>
+              <p className="text-xs text-[#718096]">
+                {isNew ? 'Prior unprobed' : 'Needs probing observations'}
+              </p>
             </div>
 
             {/* Needs Attention */}
-            <div className="p-3 md:px-4 md:py-1 space-y-1">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{isNew ? 'Insufficient' : 'Needs attention'}</span>
+            <div className="p-2 md:px-4 md:py-0 space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#526176] dark:text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                <span>{isNew ? 'Insufficient' : 'Needs attention'}</span>
               </div>
-              <p className={`text-2xl font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                {isNew ? 9 : 4} <span className="text-xs font-normal text-slate-500">concepts</span>
+              <p className={`text-2xl font-bold tabular-nums ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
+                {isNew ? 9 : 4} <span className="text-xs font-normal text-[#718096]">concepts</span>
               </p>
-              <p className="text-[11px] text-slate-500">{isNew ? 'Withheld pending diagnostic' : 'Diagnosed conceptual gap'}</p>
+              <p className="text-xs text-[#718096]">
+                {isNew ? 'Withheld pending diagnostic' : 'Diagnosed conceptual gap'}
+              </p>
             </div>
           </div>
 
-          {/* CRITICAL DISTINCTION CALLOUT */}
-          <div className={`flex items-start gap-2.5 p-3 rounded-lg border text-xs ${
-            isLight 
-              ? 'bg-slate-50/80 border-slate-200/80 text-slate-600' 
-              : 'bg-slate-950/60 border-slate-800 text-slate-400'
+          {/* Psychometric distinction callout: quiet and integrated */}
+          <div className={`mt-5 pt-3.5 border-t text-xs flex items-start gap-2.5 ${
+            isLight ? 'border-[#EEF2F6] text-[#526176]' : 'border-slate-800 text-slate-400'
           }`}>
-            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-            <div>
-              <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
-                Neuronotes Psychometric Principle: 
-              </span>
-              <span>
-                {' '}Uncertain concepts are <em>not</em> treated as low scores. The model explicitly distinguishes between 
-                <strong className={isLight ? 'text-rose-700' : 'text-rose-400'}> diagnosed weak knowledge</strong> (high evidence of low mastery, e.g., Nernst Equation at 28%) and 
-                <strong className={isLight ? 'text-slate-800' : 'text-slate-200'}> insufficient evidence</strong> (wide variance, e.g., Faraday’s Law with sparse observations).
-              </span>
-            </div>
+            <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              <strong className={isLight ? 'text-[#172033]' : 'text-slate-200'}>Neuronotes Psychometric Principle: </strong>
+              Uncertain concepts are not treated as low scores. The model explicitly distinguishes between 
+              <strong className={isLight ? 'text-rose-700 font-semibold' : 'text-rose-400 font-semibold'}> diagnosed weak knowledge </strong> 
+              (e.g., Nernst Equation at 28%) and 
+              <strong className={isLight ? 'text-[#172033] font-semibold' : 'text-slate-200 font-semibold'}> insufficient evidence </strong> 
+              (wide posterior variance).
+            </p>
           </div>
         </div>
       </section>
@@ -370,21 +392,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* TWO COLUMNS: POSSIBLE MISCONCEPTIONS & RECENT ACTIVITY */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Card: Possible Misconceptions */}
-        <section className={`rounded-xl border p-5 space-y-3.5 ${
-          isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+        <section className={`rounded-xl border p-5 space-y-4 transition-colors ${
+          isLight 
+            ? 'bg-white border-[#D7DEE7] shadow-[0_1px_2px_rgba(15,23,42,0.04)]' 
+            : 'bg-slate-900 border-slate-800'
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h3 className={`text-xs font-semibold uppercase tracking-wider font-mono ${
-                isLight ? 'text-slate-700' : 'text-slate-300'
+              <h3 className={`text-sm font-bold tracking-tight ${
+                isLight ? 'text-[#172033]' : 'text-slate-100'
               }`}>
                 Possible Misconceptions
               </h3>
             </div>
             <Link
               href="/review"
-              className="text-xs font-mono text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              className="text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8] dark:text-blue-400 flex items-center gap-1"
             >
               <span>View all ({misconceptions.length})</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -393,53 +417,55 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {misconceptions.length === 0 ? (
             <div className={`p-5 rounded-lg border text-center ${
-              isLight ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-slate-800/40 border-slate-700/60 text-slate-400'
+              isLight ? 'bg-[#F8FAFC] border-[#D7DEE7] text-[#526176]' : 'bg-slate-800/40 border-slate-700/60 text-slate-400'
             }`}>
               <CheckCircle2 className="w-6 h-6 mx-auto mb-1.5 text-emerald-500" />
-              <p className="text-xs font-medium">No Misconception Patterns Flagged</p>
-              <p className="text-[11px] mt-0.5 opacity-80">
+              <p className="text-xs font-semibold">No Misconception Patterns Flagged</p>
+              <p className={`text-xs mt-0.5 ${isLight ? 'text-[#718096]' : 'opacity-80'}`}>
                 {isNew ? 'Initial baseline is clean. Bayesian pattern detector active.' : 'All conceptual models operating normally.'}
               </p>
             </div>
           ) : (
             primaryMisconception && (
-              <div className={`p-3.5 rounded-lg border space-y-2.5 ${
+              <div className={`p-4 rounded-lg border space-y-2.5 ${
                 isLight 
-                  ? 'bg-amber-50/40 border-amber-200' 
+                  ? 'bg-[#FFFDF9] border-[#FED7AA]' 
                   : 'bg-amber-950/20 border-amber-900/40'
               }`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-amber-800 dark:text-amber-300 font-medium">
+                  <span className={`text-xs font-semibold ${
+                    isLight ? 'text-[#C2410C]' : 'text-amber-300'
+                  }`}>
                     {primaryMisconception.conceptName}
                   </span>
-                  <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
+                  <span className={`text-xs font-mono px-2 py-0.5 rounded ${
                     isLight 
-                      ? 'bg-amber-100 text-amber-800 border-amber-300' 
-                      : 'bg-amber-900/40 text-amber-200 border-amber-800'
+                      ? 'bg-amber-100/70 text-[#C2410C]' 
+                      : 'bg-amber-900/40 text-amber-200'
                   }`}>
                     Confidence: {primaryMisconception.confidence}
                   </span>
                 </div>
 
-                <p className={`text-xs font-medium ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                <p className={`text-xs font-semibold ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
                   &ldquo;{primaryMisconception.title}&rdquo;
                 </p>
 
-                <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                <p className={`text-xs leading-relaxed ${isLight ? 'text-[#526176]' : 'text-slate-300'}`}>
                   {primaryMisconception.statement}
                 </p>
 
                 <div className={`pt-2 border-t flex items-center justify-between ${
-                  isLight ? 'border-amber-200/80' : 'border-amber-900/40'
+                  isLight ? 'border-[#FED7AA]/60' : 'border-amber-900/40'
                 }`}>
-                  <span className={`text-xs font-mono ${isLight ? 'text-amber-800' : 'text-amber-300/80'}`}>
+                  <span className={`text-xs font-mono ${isLight ? 'text-[#C2410C]' : 'text-amber-300/80'}`}>
                     Evidence: {primaryMisconception.evidence}
                   </span>
                   <button
                     onClick={() => openMisconception(primaryMisconception)}
-                    className={`px-2.5 py-1 rounded-md font-mono text-xs font-medium border transition ${
+                    className={`px-3 py-1 rounded-md text-xs font-medium border transition ${
                       isLight 
-                        ? 'bg-white hover:bg-amber-50 text-amber-900 border-amber-300 shadow-sm' 
+                        ? 'bg-white hover:bg-[#FFF7ED] text-[#9A3412] border-[#FED7AA]' 
                         : 'bg-amber-900/30 hover:bg-amber-900/50 text-amber-200 border-amber-800'
                     }`}
                   >
@@ -450,61 +476,65 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             )
           )}
 
-          <div className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
-            isLight ? 'bg-slate-50/80 border-slate-200/80 text-slate-600' : 'bg-slate-950/60 border-slate-800 text-slate-400'
+          <div className={`py-2 px-3 rounded-lg text-xs flex items-center justify-between ${
+            isLight ? 'bg-[#EEF2F6] text-[#526176]' : 'bg-slate-950/70 text-slate-300'
           }`}>
             <span>Emerging pattern: Reaction Quotient Q Inversion</span>
-            <span className="font-mono text-slate-500">Confidence: Emerging</span>
+            <span className={`font-mono text-xs ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
+              Confidence: Emerging
+            </span>
           </div>
         </section>
 
-        {/* Card: Recent Learning Activity */}
-        <section className={`rounded-xl border p-5 space-y-3.5 ${
-          isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+        {/* Card: Recent Diagnostic Activity */}
+        <section className={`rounded-xl border p-5 space-y-4 transition-colors ${
+          isLight 
+            ? 'bg-white border-[#D7DEE7] shadow-[0_1px_2px_rgba(15,23,42,0.04)]' 
+            : 'bg-slate-900 border-slate-800'
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <h3 className={`text-xs font-semibold uppercase tracking-wider font-mono ${
-                isLight ? 'text-slate-700' : 'text-slate-300'
+              <TrendingUp className="w-4 h-4 text-[#2563EB] dark:text-blue-400" />
+              <h3 className={`text-sm font-bold tracking-tight ${
+                isLight ? 'text-[#172033]' : 'text-slate-100'
               }`}>
                 Recent Diagnostic Activity
               </h3>
             </div>
             <Link
               href="/progress"
-              className="text-xs font-mono text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              className="text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8] dark:text-blue-400 flex items-center gap-1"
             >
               <span>Full Log</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {activities.map((act) => (
               <div 
                 key={act.id} 
-                className={`p-2.5 rounded-lg border flex items-start justify-between gap-3 ${
-                  isLight ? 'bg-slate-50/80 border-slate-200/80' : 'bg-slate-950/60 border-slate-800'
+                className={`p-2.5 rounded-lg flex items-start justify-between gap-3 transition-colors ${
+                  isLight ? 'bg-[#F8FAFC] hover:bg-[#EEF2F6]' : 'bg-slate-950/50 hover:bg-slate-950'
                 }`}
               >
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
+                    <span className={`text-xs font-semibold ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>
                       {act.title}
                     </span>
                     <MasteryBadge status={act.statusBadge} size="sm" />
                   </div>
-                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p className={`text-xs ${isLight ? 'text-[#526176]' : 'text-slate-400'}`}>
                     {act.description}
                   </p>
                   {act.deltaMetric && (
-                    <p className="text-[11px] font-mono text-blue-600 dark:text-blue-400 font-medium">
+                    <p className="text-[11px] font-mono text-[#2563EB] dark:text-blue-400 font-medium">
                       {act.deltaMetric}
                     </p>
                   )}
                 </div>
-                <span className="text-[11px] font-mono text-slate-500 shrink-0">
+                <span className={`text-[11px] font-mono shrink-0 ${isLight ? 'text-[#718096]' : 'text-slate-500'}`}>
                   {act.timestamp}
                 </span>
               </div>

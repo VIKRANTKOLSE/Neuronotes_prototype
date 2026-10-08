@@ -2,6 +2,8 @@
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-18.3-blue?style=flat&logo=react)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green?style=flat&logo=node.js)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.19-lightgrey?style=flat&logo=express)](https://expressjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
 
@@ -43,8 +45,13 @@ Explain Item Selection Rationale ("Why This Question?")
 2. **Uncertainty ($\sigma_\theta$) vs. Low Score**: Neuronotes explicitly separates **confirmed weak mastery** (narrow confidence interval around low ability) from **insufficient evidence** (wide posterior variance due to sparse observations). Unprobed topics are never penalised as "failures".
 3. **Prerequisite Relationships (DAG)**: Knowledge is structured as a Directed Acyclic Graph where foundational competencies gate downstream topics.
 4. **Probabilistic Misconception Detection**: Non-punitive Bayesian detection flags emerging patterns (e.g. sign confusion or intensive vs extensive variable conflation) using qualified confidence tiers: *Emerging pattern*, *Moderate*, *Strong evidence*, or *Insufficient evidence*.
-5. **Explainability ("Why am I seeing this question?")**: Every item surfaces its diagnostic reason (uncertainty reduction, targeted remediation, prerequisite sequencing, or information gain).
-6. **Research / Admin Mode**: Real-time inspection of underlying psychometric parameters:
+5. **Single Notes Summary Per Session**: Every test session synthesizes strictly **one cohesive notes summary**:
+   - **Parts with Mistakes**: Formatted in **bold** (`**Concept with Mistake**`, `**Error Analysis**`, `**Elongated Diagnostic Breakdown**`, `**Remediation Rule**`) and **elongated in explanation** detailing underlying thermodynamic/redox derivations and misconception mechanisms.
+   - **Parts with Correct Answers**: Formatted in **normal font size** (`text-xs font-normal`) with concise checkmark (`✓`) summaries.
+6. **Dual-User Comparative Validation**:
+   - **User 1 (Elena Rostova / `user-new`)**: Completely new learner profile with 0 tests taken, 0 notes, uncalibrated prior ($\theta = 0.00, \sigma = 1.20$), all 9 concepts in "insufficient evidence" state with mastery withheld.
+   - **User 2 (Vikrant Kolse / `user-history`)**: Longitudinal learner profile with 3 past tests, single notes summaries per session, 54 items administered, calibrated mastery (71%), and active misconception flags.
+7. **Research / Admin Mode**: Real-time inspection of underlying psychometric parameters:
    - Fisher Information $I(\theta)$
    - Estimated Ability $\hat{\theta}$
    - Standard Error $\sigma(\theta)$
@@ -60,7 +67,8 @@ Explain Item Selection Rationale ("Why This Question?")
 | **Home / Dashboard** | `/` | Answers *"What should I do next?"* with Next Best Action card, Mastery Breakdown (Strong, Developing, Uncertain, Needs Attention), Principle Notice, and Active Misconceptions. |
 | **Practice Selection** | `/practice` | Offers prominent 1-click **Adaptive Practice** and secondary manual curriculum filter. |
 | **Active Quiz** | `/quiz` | High-fidelity scientific item runner with chemical notation, accessible cards, instant feedback, Explainable AI accordion, and research metrics. |
-| **Knowledge Map** | `/knowledge-map` | Interactive prerequisite DAG with non-overlapping hierarchical layout, animated vector paths, status filters, and sliding Concept Inspection drawer. |
+| **Past Tests & Notes** | `/tests` | Detailed test session history and diagnostic notes catalog. Features item-by-item response comparison and strictly **one structured notes summary per session** with bold elongated mistakes and normal-size correct concepts. |
+| **Knowledge Map** | `/knowledge-map` | Interactive 4-tier chemistry prerequisite dependency DAG (58 canonical concepts across Foundation, Core Mechanisms, Derived Behavior, and Complex Systems; 67 directed prerequisite edges), with dual DAG/Matrix view modes and detailed dependency path tracing. |
 | **Progress & Telemetry** | `/progress` | Detailed MIRT parameter distribution, standard error reduction curve, and historical activity logs. |
 | **Review & Remediation** | `/review` | Bayesian Misconception Registry with targeted 3-question diagnostic remediation drills. |
 
@@ -77,7 +85,7 @@ Neuronotes adheres to a calm, clinical, scientific aesthetic inspired by modern 
   - **Needs Attention**: Rose (`#F43F5E`)
   - **Insufficient Evidence**: Slate Neutral (`#64748B`)
   - **Misconception Signal**: Diagnostic Ochre/Terracotta (`#FB923C`)
-- **Theme Support**: Seamless 1-click toggle between **Dark Mode** (Deep slate `#0B0F19`) and **Light Mode** (Clinical white/slate `#F8FAFC`), persisted in `localStorage`.
+- **Theme Support**: Seamless 1-click toggle between **Dark Mode** (Deep slate `#0B0F19`) and **Light Mode** (Calm scientific neutral `#F6F8FA` surfaces, `#E2E8F0` micro-borders), persisted in `localStorage`.
 
 ---
 
@@ -87,13 +95,15 @@ Neuronotes adheres to a calm, clinical, scientific aesthetic inspired by modern 
 Browser
   │
   ▼
-Next.js 14 Frontend (App Router, Server Components + Interactive Client Views)
+Next.js 14 Frontend (App Router, Server Components + Interactive Client Views on port 3000)
   │
-  ▼ (HTTP / JSON via services/api.ts with fallback)
-FastAPI Backend (Separate Service on port 8000)
+  ▼ (HTTP / JSON via services/api.ts with X-User-Id header)
+Node.js Express + TypeScript Psychometric Backend (port 8000)
   │
-  ▼
-PostgreSQL & Python Psychometric Engine (MIRT / Bayesian DAG)
+  ├── 2PL MIRT Engine (Item Response, Fisher Information, Bayesian θ update)
+  ├── Dual-User In-Memory Store (user-new vs user-history)
+  ├── Session Diagnostic Notes Synthesizer (Single note per session)
+  └── REST Endpoints (/api/users, /api/tests, /api/notes, /api/concepts, etc.)
 ```
 
 ---
@@ -104,33 +114,49 @@ PostgreSQL & Python Psychometric Engine (MIRT / Bayesian DAG)
 - **Node.js**: v18.17+ or v20+
 - **npm**: v9+
 
-### 2. Frontend Setup
+### 2. Backend Setup
 ```bash
-# Navigate to frontend
+# Navigate to backend
+cd backend
+
+# Install dependencies
+npm install
+
+# Start Express + TypeScript server on port 8000
+npm run dev
+```
+
+### 3. Frontend Setup
+```bash
+# Open a new terminal and navigate to frontend
 cd frontend
 
 # Install dependencies
 npm install
 
-# Start development server
+# Start Next.js development server on port 3000
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 3. Production Build
-```bash
-cd frontend
-npm run build
-npm run start
-```
-
 ### 4. Configuration
-Create a `.env.local` file inside `frontend/`:
+A `.env.local` file is located inside `frontend/`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
-*Note: If the FastAPI backend is not running, the frontend gracefully falls back to its local psychometric mock model in `lib/mockData.ts`, allowing full standalone demonstration of all features.*
+*Note: If the backend service is offline, the frontend gracefully falls back to its local psychometric mock model in `lib/mockData.ts`, allowing standalone demonstration of all features.*
+
+### 5. Production Build Validation
+```bash
+# Frontend Build
+cd frontend
+npm run build
+
+# Backend Build
+cd backend
+npm run build
+```
 
 ---
 

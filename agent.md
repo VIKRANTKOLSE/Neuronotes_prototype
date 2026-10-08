@@ -12,63 +12,69 @@
 1. **Never gamify childishly**: No confetti, cartoon badges, neon AI gradients, robot mascots, or childish sounds. The audience is serious university students preparing for difficult academic disciplines (e.g., Physical Chemistry, Thermodynamics, Electrochemistry).
 2. **Never equate uncertainty with low score**: Low ability ($\theta < 0$ with narrow $\sigma$) is fundamentally distinct from insufficient evidence ($\sigma$ wide due to sparse items). Unprobed topics must display as *"Insufficient evidence / Withheld"*, never as low mastery.
 3. **Probabilistic Misconception Phrasing**: Misconceptions must always use probabilistic, non-punitive phrasing (*"Possible misconception"*, *"Emerging pattern"*, *"Confidence: Moderate"*). Never state conclusively that a student "has a flaw" without sufficient Bayesian evidence.
-4. **FastAPI Contract Integrity**: The frontend communicates via `frontend/services/api.ts` with a separate FastAPI backend on `http://localhost:8000` (`NEXT_PUBLIC_API_URL`). Never modify backend contracts or relocate FastAPI into Next.js routes.
+4. **Backend API Contract Integrity**: The frontend communicates via `frontend/services/api.ts` with the Node.js Express + TypeScript backend on `http://localhost:8000` (`NEXT_PUBLIC_API_URL`) using `X-User-Id` request context headers.
+5. **Strict Single Notes Summary Per Session**: Each test session has strictly **only one notes summary** (`test.notes = [sessionSummaryNote]`).
+   - Parts with mistakes MUST be formatted in **bold** (`**Concept with Mistake**`, `**Error Analysis**`, `**Elongated Diagnostic Breakdown**`, `**Remediation Rule**`) and **elongated in explanation** (derivation, quotient placement, physical mechanism).
+   - Parts with correct answers MUST be formatted in **normal size in explanation** (`text-xs font-normal`) with concise checkmark (`✓`) summaries.
+   - Frontend renders this with `StructuredSessionNoteRenderer` across both the Session Inspector and the Diagnostic Notes tab.
 
 ---
 
 ## 2. Directory & Component Architecture
 
 ```
-frontend/
-├── app/                              # Next.js 14 App Router (Server Components by default)
-│   ├── layout.tsx                    # Root Server layout (fonts: Inter & JetBrains Mono, ClientLayout)
-│   ├── globals.css                   # Tailwind base, dark mode, typography
-│   ├── loading.tsx                   # Route-level loading state
-│   ├── not-found.tsx                 # Custom 404 page
-│   ├── page.tsx                      # Route: / (Dashboard / Next Best Action)
-│   ├── practice/page.tsx             # Route: /practice (Adaptive & manual selection)
-│   ├── quiz/page.tsx                 # Route: /quiz (Adaptive item runner & Explainable AI)
-│   ├── knowledge-map/page.tsx        # Route: /knowledge-map (Prerequisite DAG & Concept Drawer)
-│   ├── progress/page.tsx             # Route: /progress (Psychometric MIRT telemetry & logs)
-│   ├── review/page.tsx               # Route: /review (Misconceptions registry & drills)
-│   └── tests/page.tsx                # Route: /tests (Past tests & diagnostic notes)
+IPD_prototype/
+├── backend/                          # Express + TypeScript Psychometric Backend (port 8000)
+│   ├── src/
+│   │   ├── data/                     # In-memory stores (users, tests, notes, questions, concepts)
+│   │   │   ├── notes.ts              # Single structured notes summaries per session
+│   │   │   ├── tests.ts              # Historical test sessions linked to 1 note summary each
+│   │   │   └── users.ts              # Dual-user data (user-new vs user-history)
+│   │   ├── routes/                   # REST endpoints (auth, tests, notes, questions, concepts, etc.)
+│   │   ├── services/                 # MIRT 2PL psychometrics & testService (session notes synthesis)
+│   │   ├── types/                    # Backend TypeScript models (User, PastTestSession, TestNote, etc.)
+│   │   └── index.ts                  # Express app setup, CORS, X-User-Id header handling
+│   ├── package.json
+│   └── tsconfig.json
 │
-├── components/
-│   ├── layout/
-│   │   ├── Sidebar.tsx               # Navigation sidebar (uses next/link and next/navigation)
-│   │   ├── Header.tsx                # Top header bar, breadcrumbs, theme toggle, profile menu
-│   │   └── ClientLayout.tsx          # Client provider managing theme, research mode, modal
-│   ├── dashboard/
-│   │   └── DashboardView.tsx         # Dashboard UI implementation
-│   ├── practice/
-│   │   └── PracticeView.tsx          # Adaptive & manual practice configuration UI
-│   ├── quiz/
-│   │   └── QuizView.tsx              # Interactive quiz runner, timer, option states, "Why this question?"
-│   ├── knowledge-map/
-│   │   └── KnowledgeMapView.tsx      # SVG DAG visualizer, zoom/filter, inspection drawer
-│   ├── progress/
-│   │   └── ProgressView.tsx          # Ability spectrum & uncertainty breakdown UI
-│   ├── review/
-│   │   └── ReviewView.tsx            # Misconceptions registry & remediation launcher
-│   ├── mastery/
-│   │   ├── MasteryBadge.tsx          # Calibrated status indicator badge
-│   │   └── ConfidenceMeter.tsx       # Estimated mastery & confidence interval [min%, max%]
-│   └── modals/
-│       └── MisconceptionModal.tsx    # Diagnostic pattern alert modal with remediation drill trigger
+├── frontend/
+│   ├── app/                          # Next.js 14 App Router
+│   │   ├── layout.tsx                # Root layout (Inter & JetBrains Mono, ClientLayout)
+│   │   ├── globals.css               # Tailwind base, dark/light theme tokens
+│   │   ├── page.tsx                  # Route: / (Dashboard / Next Best Action)
+│   │   ├── practice/page.tsx         # Route: /practice (Adaptive & manual selection)
+│   │   ├── quiz/page.tsx             # Route: /quiz (Adaptive item runner & Explainable AI)
+│   │   ├── knowledge-map/page.tsx    # Route: /knowledge-map (Prerequisite DAG & Concept Drawer)
+│   │   ├── progress/page.tsx         # Route: /progress (Psychometric MIRT telemetry & logs)
+│   │   ├── review/page.tsx           # Route: /review (Misconceptions registry & drills)
+│   │   └── tests/page.tsx            # Route: /tests (Past tests & structured diagnostic notes)
+│   │
+│   ├── components/
+│   │   ├── layout/                   # Sidebar, Header, ClientLayout, Auth Modal
+│   │   ├── dashboard/                # DashboardView (Calm scientific light/dark mode)
+│   │   ├── practice/                 # PracticeView
+│   │   ├── quiz/                     # QuizView
+│   │   ├── knowledge-map/            # KnowledgeMapView (Non-overlapping SVG DAG)
+│   │   ├── progress/                 # ProgressView
+│   │   ├── review/                   # ReviewView
+│   │   ├── tests/
+│   │   │   └── PastTestsView.tsx     # Past tests inspector + StructuredSessionNoteRenderer
+│   │   ├── mastery/                  # MasteryBadge, ConfidenceMeter
+│   │   └── modals/                   # MisconceptionModal, LoginModal
+│   │
+│   ├── services/
+│   │   └── api.ts                    # REST client with X-User-Id context & mock fallback
+│   ├── types/
+│   │   └── index.ts                  # Canonical frontend TypeScript interfaces
+│   ├── lib/
+│   │   └── mockData.ts               # Standalone fallback data model
+│   ├── .env.local                    # NEXT_PUBLIC_API_URL=http://localhost:8000
+│   └── package.json
 │
-├── services/
-│   └── api.ts                        # FastAPI client (GET /api/concepts, POST /api/submissions, etc. with mock fallback)
-├── types/
-│   └── index.ts                      # Canonical TypeScript interfaces
-├── lib/
-│   └── mockData.ts                   # Realistic physical chemistry mock dataset
-├── public/                           # Static assets
-├── .env.local                        # NEXT_PUBLIC_API_URL=http://localhost:8000
-├── next.config.mjs                   # Next.js config
-├── tailwind.config.js                # Tailwind theme with darkMode: 'class'
-├── postcss.config.js                 # CommonJS PostCSS config
-├── tsconfig.json                     # Path alias `@/*` -> `./*`
-└── package.json                      # Next.js scripts
+├── agent.md                          # Persistent agent guide & technical invariants
+├── design.md                         # Comprehensive system architecture & entity model
+├── history.md                        # Project changelog & version records
+└── Readme.md                         # Project overview, installation, & usage
 ```
 
 ---
@@ -99,29 +105,57 @@ export interface Concept {
   position: { x: number; y: number }; // Coordinates on DAG canvas
   level: number;
 }
+
+export interface TestNote {
+  id: string;
+  testId?: string;
+  userId: string;
+  title: string;
+  conceptId: string;
+  conceptName: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  content: string; // Structured note: bold elongated mistakes + normal size correct parts
+}
+
+export interface PastTestSession {
+  id: string;
+  userId: string;
+  title: string;
+  timestamp: string;
+  durationSeconds: number;
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+  topicsTested: string[];
+  thetaStart: number;
+  thetaEnd: number;
+  questions: PastTestQuestionResult[];
+  notes: TestNote[]; // Strictly 1 notes summary per session
+}
 ```
 
 ---
 
-## 4. Knowledge Map DAG Layout Math
+## 4. Knowledge Map 4-Tier Dependency DAG Architecture
 
-To prevent node overlaps in the SVG Knowledge Map visualizer:
-* **Node Dimensions**: `NODE_WIDTH = 210px`, `NODE_HEIGHT = 92px`.
-* **Canvas Dimensions**: `width: 920px`, `height: 920px`.
-* **Connecting Arrows Anchor Math**:
-  ```typescript
-  const startX = parentNode.position.x + NODE_WIDTH / 2; // Bottom center
-  const startY = parentNode.position.y + NODE_HEIGHT;
-  const endX = childNode.position.x + NODE_WIDTH / 2;     // Top center
-  const endY = childNode.position.y;
-  ```
-* **Coordinate Grid**:
-  - Level 1: `x: 355, y: 40` (Thermodynamics Foundations)
-  - Level 2: `x: 150, y: 190` (Enthalpy), `x: 560, y: 190` (Entropy)
-  - Level 3: `x: 355, y: 340` (Gibbs Energy)
-  - Level 4: `x: 180, y: 490` (Cell Potential), `x: 530, y: 490` (Equilibrium Constant)
-  - Level 5: `x: 80, y: 640` (Electrochemistry Cells), `x: 480, y: 640` (Nernst Equation)
-  - Level 6: `x: 80, y: 790` (Faraday's Law)
+The knowledge dependency system is grounded strictly in the project's canonical `dependencies_mapping.docx` source of truth:
+* **Canonical Node Count**: Exactly **58 concepts** across 4 conceptual tiers.
+* **Canonical Directed Edges**: Exactly **67 directed prerequisite edges** (`source` = prerequisite, `target` = dependent).
+* **Tier Structure**:
+  - **Tier 1 (Foundation)**: 10 nodes (Atomic parameters, orbital penetration, lattice energy, etc.)
+  - **Tier 2 (Core Mechanisms)**: 13 nodes (Periodic trends, VSEPR, hybridization, Fajan's rule, etc.)
+  - **Tier 3 (Derived Chemical Behavior)**: 17 nodes (Inert pair effect, lanthanoid contraction, d-block stability, etc.)
+  - **Tier 4 (Complex Systems)**: 18 nodes (Coordination fields, crystal field splitting & stabilization energy, high/low-spin complexes, etc.)
+* **SVG DAG Canvas Parameters**:
+  - `NODE_WIDTH = 250px`, `NODE_HEIGHT = 82px`.
+  - `CANVAS_WIDTH = 1420px`, `CANVAS_HEIGHT = 2100px`.
+  - Column X-offsets: Tier 1 at `x: 60px`, Tier 2 at `x: 400px`, Tier 3 at `x: 740px`, Tier 4 at `x: 1080px`.
+  - Cubic Bezier vector math:
+    - Start (Prerequisite right anchor): `(conn.from.position.x + NODE_WIDTH, conn.from.position.y + NODE_HEIGHT / 2)`
+    - End (Dependent left anchor): `(conn.to.position.x, conn.to.position.y + NODE_HEIGHT / 2)`
+    - Curve: `M (x1, y1) C (x1 + dx, y1), (x2 - dx, y2), (x2, y2)` with `dx = |x2 - x1| * 0.55`.
 
 ---
 
@@ -129,10 +163,10 @@ To prevent node overlaps in the SVG Knowledge Map visualizer:
 
 * **Mode Mechanism**: Handled via `document.documentElement.classList.add('dark' | 'light')` and persisted in `localStorage('neuronotes-theme')`.
 * **Default**: `dark`.
-* **Light Mode Token Guidelines**:
-  - Background: `bg-slate-50`, cards in pure `#FFFFFF` with `border-slate-200` and `shadow-sm`.
-  - Text: `text-slate-900` for headings, `text-slate-600` for body, `text-slate-500` for captions.
-  - Active Pills: Crisp soft tints (`bg-blue-50 text-blue-700 border-blue-200`).
+* **Light Mode Guidelines ("Calm Scientific Workspace")**:
+  - Background: Soft neutral `#F6F8FA`, cards in elevated white `#FFFFFF` with `#E2E8F0` micro-borders.
+  - Text: Deep slate `#0F172A` for headers, `#334155` for high-readability body, `#64748B` for secondary labels.
+  - Visual Fatigue Prevention: Avoid raw `#000000` text on glaring `#FFFFFF` expanses; use soft neutral borders and subdued surfaces.
 * **Switching**: Accessible via `Header.tsx` and `Sidebar.tsx`.
 
 ---
@@ -140,15 +174,19 @@ To prevent node overlaps in the SVG Knowledge Map visualizer:
 ## 6. Common Developer Commands
 
 ```bash
-# Navigate to frontend
-cd frontend
-
-# Run development server (runs on port 3000)
+# 1. Run Backend Service (Express + TypeScript on port 8000)
+cd backend
 npm run dev
 
-# Run production build validation
-npm run build
+# 2. Run Frontend Next.js App (Next.js 14 on port 3000)
+cd frontend
+npm run dev
 
-# Start production server
-npm run start
+# 3. Typecheck Frontend & Backend
+cd frontend && npx tsc --noEmit
+cd backend && npx tsc --noEmit
+
+# 4. Production Build Validation
+cd frontend
+npm run build
 ```

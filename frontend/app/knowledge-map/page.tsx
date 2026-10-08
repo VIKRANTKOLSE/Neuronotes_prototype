@@ -7,7 +7,10 @@ export const metadata = {
 };
 
 export default async function KnowledgeMapPage() {
-  const concepts = await api.getConcepts();
+  const [concepts, graphData] = await Promise.all([
+    api.getConcepts(),
+    api.getDependencyGraph()
+  ]);
 
-  return <KnowledgeMapView concepts={concepts} />;
+  return <KnowledgeMapView concepts={concepts} initialGraphData={graphData} />;
 }

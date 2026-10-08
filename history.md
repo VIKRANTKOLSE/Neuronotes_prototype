@@ -4,6 +4,53 @@ This file tracks all architectural, design, and implementation changes across th
 
 ---
 
+## [v1.6.0] — 2026-10-07
+### Canonical 4-Tier Chemistry Dependency Graph & Complete Removal of Fabricated Concepts
+- **Removal of Fabricated Mock Data**:
+  - Removed all fabricated placeholder thermodynamics concepts (`thermo-01`, `enthalpy-02`, `entropy-03`, `gibbs-04`, `cell-pot-05`, `electro-06`, `eq-const-07`, `nernst-08`, `faraday-09`) from backend, frontend mock data, and dashboard views.
+- **Authoritative 4-Tier Chemistry Curriculum Grounding**:
+  - Grounded the entire platform strictly in the project's canonical `dependencies_mapping.docx` source of truth across 4 tiers:
+    1. **Tier 1 — Foundation** (10 concepts): Atomic parameters, orbital penetration, lattice energy, etc.
+    2. **Tier 2 — Core Mechanisms** (13 concepts): Periodic trends, VSEPR, hybridization, Fajan's rule, etc.
+    3. **Tier 3 — Derived Chemical Behavior** (17 concepts): Inert pair effect, lanthanoid contraction, d-block stability, etc.
+    4. **Tier 4 — Complex Systems** (18 concepts): Coordination fields, crystal field splitting & stabilization energy, high/low-spin complexes, etc.
+  - Total: Exactly **58 canonical concepts** and **67 directed prerequisite edges**.
+- **Backend Graph API (`backend/src/routes/conceptRoutes.ts`)**:
+  - Exposed `GET /api/concepts/graph` returning the complete dependency graph with tiers, nodes, and explicit directed prerequisite edges (`source` = prerequisite, `target` = dependent).
+- **Redesigned Prerequisite Knowledge Map (`KnowledgeMapView.tsx`)**:
+  - Implemented dual view modes:
+    - **Tiered DAG Graph View**: Scalable SVG canvas with 4 tier tracks, cubic Bezier connection vectors, and directional arrow markers.
+    - **Curriculum Tier Matrix**: 4-column structured grid with searchable nodes and direct prerequisite/dependent counts.
+  - Interactive Selection & Path Tracing:
+    - Highlighting a concept illuminates its upstream prerequisites with green/emerald incoming arrows and its downstream dependents with blue outgoing arrows.
+    - Added **Curriculum Prerequisite Chain Trace** walking the DAG from foundation to complex systems (e.g. `Metal-Ligand Bonding` → `Ligand Field Theory` → `Crystal Field Splitting` → `Crystal Field Stabilization Energy` → `High-Spin vs Low-Spin Complexes`).
+- **Dashboard Next Best Action Alignment**:
+  - Updated dashboard to point to canonical root concept `Effective Nuclear Charge` (for baseline learners) and `Crystal Field Stabilization Energy` (for calibrated learners) with real prerequisite dependencies.
+
+---
+
+## [v1.5.0] — 2026-10-07
+### Single Notes Summary Per Session with Bold Elongated Mistakes & Light Mode Refinement
+- **Single Notes Summary Per Test Session Invariant**:
+  - Enforced strictly **one notes summary per test session** (`test.notes = [sessionSummaryNote]`) across both backend and frontend layers.
+  - Consolidated all historical session notes (`test-hist-01`, `test-hist-02`, `test-hist-03`) into unified, comprehensive session summaries.
+  - Updated backend `recordTestSession` and `createNote` in `backend/src/services/testService.ts` to automatically synthesize a single structured summary note upon test completion, superseding loose multiple notes.
+- **Diagnostic Structured Formatting**:
+  - **Mistake Sections**: Formatted with **bold text** (`**Concept with Mistake**`, `**Error Analysis**`, `**Elongated Diagnostic Breakdown**`, `**Remediation Rule**`) and **elongated in-depth explanations** detailing underlying physical mechanisms, quotient inversions, and step-by-step mathematical corrections.
+  - **Correct Sections**: Formatted in **normal body size** with concise bulleted checkmarks (`✓`) summarizing mastered concepts cleanly without unnecessary elongation.
+- **Frontend `StructuredSessionNoteRenderer`**:
+  - Implemented `StructuredSessionNoteRenderer` in `frontend/components/tests/PastTestsView.tsx`.
+  - Parses structured notes dynamically and renders mistakes inside high-visibility diagnostic alert callouts with bold titles and elongated text blocks.
+  - Integrated across both **Tab 1 (Past Test Sessions detail inspector)** and **Tab 2 (Diagnostic Notes catalog)**.
+  - Session list reflects `1 Notes Summary` per session card.
+- **Calm Scientific Light Mode Refinement**:
+  - Overhauled dashboard and application light mode from stark white borders into a soft neutral research workspace (`#F6F8FA` background, `#FFFFFF` cards, `#E2E8F0` micro-borders).
+  - Preserved technical psychometric character while significantly reducing visual fatigue.
+- **Dual-User Login & Profile Switcher**:
+  - Built interactive Login Window modal with instant 1-click authentication and credential autofill for both User 1 (`user-new` / Elena Rostova) and User 2 (`user-history` / Vikrant Kolse).
+
+---
+
 ## [v1.4.0] — 2026-10-07
 ### Node.js Express Psychometric Backend, Dual-User System, Past Tests & Notes
 - **Node.js Express + TypeScript Backend (`backend/`)**:
