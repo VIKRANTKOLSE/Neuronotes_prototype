@@ -91,16 +91,15 @@ export async function initDb(): Promise<void> {
       for (const row of allRows.rows) {
         let userConcepts = Array.isArray(row.concepts) ? row.concepts : (USER_NEW.concepts || []);
         
-        // Ensure user-history has the complete 58-concept calibrated hierarchy
-        if (row.id === 'user-history' && (userConcepts.length < 50 || !userConcepts.some((c: any) => c.estimatedMastery > 0))) {
+        // Ensure user-history (Vikrant Kolse) starts at 0% unprobed baseline across all 58 concepts
+        if (row.id === 'user-history') {
           userConcepts = USER_HISTORY.concepts;
-          await client.query('UPDATE users SET concepts = $1, overall_mastery = $2, theta_vector = $3 WHERE id = $4', [
+          await client.query('UPDATE users SET concepts = $1, overall_mastery = 0, estimated_theta = 0.0, items_answered = 0, reliability_score = 0, is_new_user = true, theta_vector = $2 WHERE id = $3', [
             JSON.stringify(USER_HISTORY.concepts),
-            USER_HISTORY.overallMastery,
             JSON.stringify(USER_HISTORY.thetaVector),
             'user-history'
           ]);
-          console.log('[DB] Upgraded user-history concepts to full 58-concept calibration in Supabase.');
+          console.log('[DB] Synced user-history to 0% unprobed baseline in Supabase.');
         }
 
         let userThetaVector: number[] = Array.isArray(row.theta_vector) && row.theta_vector.length === 58

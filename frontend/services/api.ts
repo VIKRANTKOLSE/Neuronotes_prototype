@@ -99,13 +99,13 @@ class NeuronotesApiService {
         email: 'vikrant.kolse@university.edu',
         major: 'Undergraduate Chemistry (Year 3)',
         avatarInitials: 'VK',
-        isNewUser: false,
-        overallMastery: 71,
-        estimatedTheta: 0.45,
-        standardError: 0.28,
-        itemsAnswered: 54,
-        reliabilityScore: 89,
-        statusSummary: 'Model calibrated. Gibbs Energy has posterior uncertainty; Nernst Equation requires targeted review.'
+        isNewUser: true,
+        overallMastery: 0,
+        estimatedTheta: 0.0,
+        standardError: 1.20,
+        itemsAnswered: 0,
+        reliabilityScore: 0,
+        statusSummary: 'Unprobed baseline state. Complete adaptive diagnostic probe to begin calibration.'
       }
     ];
 
@@ -307,6 +307,55 @@ class NeuronotesApiService {
   async getConceptById(conceptId: string): Promise<Concept | null> {
     const fallback = CONCEPTS.find((c) => c.id === conceptId) || null;
     return this.request<Concept | null>(`/api/concepts/${conceptId}`, { method: 'GET' }, fallback);
+  }
+
+  /**
+   * Fetch the concept that provides MAXIMUM INFORMATION GAIN about the user
+   * based on DAG connectivity and node posterior uncertainty.
+   */
+  async getRecommendedConcept(): Promise<{
+    concept: Concept;
+    score: number;
+    connectedCount: number;
+    connectedNames: string[];
+    connectedConceptIds: string[];
+    rationale: string;
+  }> {
+    const fallback = {
+      concept: CONCEPTS[0],
+      score: 66,
+      connectedCount: 7,
+      connectedNames: [
+        'Atomic Radius Trend',
+        'Ionization Enthalpy Trend',
+        'Electron Gain Enthalpy Trend',
+        'Electronegativity Trend',
+        'Inert Pair Effect'
+      ],
+      connectedConceptIds: [
+        'atomic-radius-trend',
+        'ionization-enthalpy-trend',
+        'electron-gain-enthalpy-trend',
+        'electronegativity-trend',
+        'inert-pair-effect'
+      ],
+      rationale: 'Connected to 7 concepts. Calibrating this concept provides maximum information gain about your ability across interconnected topics.'
+    };
+    return this.request('/api/concepts/recommended', { method: 'GET' }, fallback);
+  }
+
+  /**
+   * Fetch all concepts ranked descending by information gain score
+   */
+  async getRankedRecommendations(): Promise<Array<{
+    concept: Concept;
+    score: number;
+    connectedCount: number;
+    connectedNames: string[];
+    connectedConceptIds: string[];
+    rationale: string;
+  }>> {
+    return this.request('/api/concepts/recommendations', { method: 'GET' }, []);
   }
 
   /**

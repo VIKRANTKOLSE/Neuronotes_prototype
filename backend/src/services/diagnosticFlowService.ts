@@ -527,4 +527,103 @@ export class DiagnosticFlowService {
 
     return list.slice(0, 10);
   }
+
+  /**
+   * Calculates the concept that provides MAXIMUM INFORMATION GAIN about the user
+   * based on DAG connectivity (degree centrality) and node posterior uncertainty.
+   * Prioritizes concept X connected to many other concepts whose mastery needs to be calculated.
+   */
+  static getRecommendedConcept(userId?: string): {
+    concept: Concept;
+    score: number;
+    connectedCount: number;
+    connectedNames: string[];
+    connectedConceptIds: string[];
+    rationale: string;
+  } {
+    const user = UserService.getUser(userId);
+    const concepts = user.concepts && user.concepts.length > 0 ? user.concepts : BASELINE_CONCEPTS_TEMPLATE;
+
+    const ranked = this.getRankedRecommendations(userId);
+    if (ranked.length > 0) {
+      return ranked[0];
+    }
+
+    const fallback = concepts[0];
+    return {
+      concept: fallback,
+      score: 18.5,
+      connectedCount: (fallback.dependents?.length || 0) + (fallback.prerequisites?.length || 0),
+      connectedNames: fallback.dependents?.slice(0, 5) || [],
+      connectedConceptIds: fallback.dependents || [],
+      rationale: `Foundational concept with maximum connectivity in knowledge graph.`
+    };
+  }
+
+  /**
+   * Returns all concepts ranked descending by information gain score
+   */
+  static getRankedRecommendations(userId?: string): Array<{
+    concept: Concept;
+    score: number;
+    connectedCount: number;
+    connectedNames: string[];
+    connectedConceptIds: string[];
+    rationale: string;
+  }> {
+    const user = UserService.getUser(userId);
+    const concepts = user.concepts && user.concepts.length > 0 ? user.concepts : BASELINE_CONCEPTS_TEMPLATE;
+
+    const scored = concepts.map(c => {
+      // Find all graph edges involving this concept
+      const edgeNeighbors = CANONICAL_EDGES.filter(e => e.source === c.id || e.target === c.id)
+        .map(e => e.source === c.id ? e.target : e.source);
+
+      const connectedIds = Array.from(new Set([
+        ...(c.prerequisites || []),
+        ...(c.dependents || []),
+        ...edgeNeighbors
+      ])).filter(id => id !== c.id);
+
+      const neighborConcepts = connectedIds
+        .map(id => concepts.find(other => other.id === id))
+        .filter((other): other is Concept => !!other);
+
+      // Count neighbors whose mastery needs to be calculated (unprobed or uncertain)
+      const uncertainNeighborsCount = neighborConcepts.filter(
+        n => n.totalResponses === 0 || 
+             n.status === 'insufficient_evidence' || 
+             n.status === 'uncertain' || 
+             (n.confidenceScore || 0) < 60
+      ).length;
+
+      // Node's own posterior uncertainty (highest when unprobed or low confidence)
+      const nodeUncertainty = c.totalResponses === 0 
+        ? 2.0 
+        : Math.max(0.4, (100 - (c.confidenceScore || 0)) / 45);
+
+      // Tier 1 foundation multiplier gives strategic bonus to root concepts that gate larger subgraphs
+      const tierMultiplier = c.tier === 1 ? 1.5 : c.tier === 2 ? 1.25 : c.tier === 3 ? 1.1 : 1.0;
+
+      // Information Gain formula:
+      // Uncertainty(X) * [1 + 1.2 * TotalDegree + 1.8 * UncertainNeighbors] * TierMultiplier
+      const score = nodeUncertainty * (1.0 + (connectedIds.length * 1.2) + (uncertainNeighborsCount * 1.8)) * tierMultiplier;
+
+      const neighborNames = neighborConcepts.map(n => n.name).slice(0, 5);
+
+      return {
+        concept: c,
+        score: parseFloat(score.toFixed(2)),
+        connectedCount: connectedIds.length,
+        connectedNames: neighborNames,
+        connectedConceptIds: connectedIds,
+        rationale: connectedIds.length > 0
+          ? `Connected to ${connectedIds.length} concepts (${neighborNames.slice(0, 3).join(', ')}). Calibrating this concept provides maximum information gain about your ability across interconnected topics.`
+          : `Primary diagnostic probe for latent ability calibration.`
+      };
+    });
+
+    return scored.sort((a, b) => b.score - a.score);
+  }
 }
+

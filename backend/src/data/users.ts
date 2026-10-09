@@ -37,19 +37,19 @@ export const USER_HISTORY: FullUserData = {
   email: 'vikrant.kolse@university.edu',
   major: 'Undergraduate Chemistry (Year 3)',
   avatarInitials: 'VK',
-  isNewUser: false,
-  overallMastery: 71,
-  estimatedTheta: 0.45,
-  standardError: 0.28,
-  itemsAnswered: 54,
-  reliabilityScore: 89,
-  statusSummary: 'Model calibrated. Gibbs Energy has posterior uncertainty; Nernst Equation requires targeted review.',
-  thetaVector: [...CALIBRATED_THETA_VECTOR_58],
-  concepts: JSON.parse(JSON.stringify(CALIBRATED_CONCEPTS_HISTORY)),
-  misconceptions: JSON.parse(JSON.stringify(MISCONCEPTIONS_DATABASE)),
-  activities: JSON.parse(JSON.stringify(USER_HISTORY_ACTIVITIES)),
-  tests: JSON.parse(JSON.stringify(INITIAL_TESTS_HISTORY)),
-  notes: JSON.parse(JSON.stringify(INITIAL_TEST_NOTES))
+  isNewUser: true,
+  overallMastery: 0,
+  estimatedTheta: 0.0,
+  standardError: 1.20,
+  itemsAnswered: 0,
+  reliabilityScore: 0,
+  statusSummary: 'Unprobed baseline state. Complete adaptive diagnostic probe to begin calibration.',
+  thetaVector: [...ZERO_THETA_VECTOR_58],
+  concepts: JSON.parse(JSON.stringify(BASELINE_CONCEPTS_TEMPLATE)),
+  misconceptions: [],
+  activities: [],
+  tests: [],
+  notes: []
 };
 
 export const USERS_STORE: Record<string, FullUserData> = {

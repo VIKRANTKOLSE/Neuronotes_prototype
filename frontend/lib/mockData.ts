@@ -2348,7 +2348,7 @@ export const CALIBRATED_CONCEPTS_HISTORY: Concept[] = BASELINE_CONCEPTS_TEMPLATE
   };
 });
 
-export const CONCEPTS: Concept[] = CALIBRATED_CONCEPTS_HISTORY;
+export const CONCEPTS: Concept[] = BASELINE_CONCEPTS_TEMPLATE;
 
 export const CANONICAL_CONCEPT_IDS: string[] = BASELINE_CONCEPTS_TEMPLATE.map(c => c.id);
 export const ZERO_THETA_VECTOR_58: number[] = new Array(58).fill(0.0);

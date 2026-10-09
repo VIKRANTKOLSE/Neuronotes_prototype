@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { UserService } from '../services/userService.js';
 
 import { CANONICAL_TIERS, CANONICAL_EDGES } from '../data/concepts.js';
+import { DiagnosticFlowService } from '../services/diagnosticFlowService.js';
 
 const router = Router();
 
@@ -25,8 +26,23 @@ router.get('/graph', (req: Request, res: Response) => {
   });
 });
 
+// GET concept with maximum information gain based on graph connectivity
+router.get('/recommended', (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const recommendation = DiagnosticFlowService.getRecommendedConcept(userId);
+  res.json(recommendation);
+});
+
+// GET all concepts ranked by information gain
+router.get('/recommendations', (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  const ranked = DiagnosticFlowService.getRankedRecommendations(userId);
+  res.json(ranked);
+});
+
 // GET all concepts for user
 router.get('/', (req: Request, res: Response) => {
+
   const user = UserService.getUser(getUserId(req));
   res.json(user.concepts);
 });

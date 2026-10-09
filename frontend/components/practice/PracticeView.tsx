@@ -13,6 +13,7 @@ import {
 import { useApp } from '@/components/layout/ClientLayout';
 import { api } from '@/services/api';
 import { Concept } from '@/types';
+import { getRecommendedConceptByInformationGain, rankConceptsByInformationGain } from '@/lib/informationGain';
 
 export const PracticeView: React.FC = () => {
   const router = useRouter();
@@ -50,6 +51,10 @@ export const PracticeView: React.FC = () => {
         const data = await api.getConcepts();
         if (data && data.length > 0) {
           setConcepts(data);
+          const topRec = getRecommendedConceptByInformationGain(data);
+          if (topRec?.concept?.name) {
+            setSelectedTopic(topRec.concept.name);
+          }
         }
       } catch (err) {
         console.error('Failed to load concepts for practice dropdown:', err);
@@ -57,6 +62,14 @@ export const PracticeView: React.FC = () => {
     };
     fetchConcepts();
   }, [currentUser?.id]);
+
+  const recommendedInfo = React.useMemo(() => {
+    return getRecommendedConceptByInformationGain(concepts);
+  }, [concepts]);
+
+  const rankedConcepts = React.useMemo(() => {
+    return rankConceptsByInformationGain(concepts);
+  }, [concepts]);
 
   const handleStartSession = () => {
     // Finds matching concept ID if available
@@ -90,11 +103,48 @@ export const PracticeView: React.FC = () => {
       <section className={`rounded-2xl border p-6 lg:p-8 space-y-6 shadow-sm ${
         isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
       }`}>
+        {/* MAXIMUM INFORMATION GAIN RECOMMENDATION BANNER */}
+        <div className={`p-4 sm:p-5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition ${
+          isLight ? 'bg-blue-50/70 border-blue-200' : 'bg-blue-950/20 border-blue-800/60'
+        }`}>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold uppercase px-2 py-0.5 rounded bg-blue-600 text-white flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                Recommended for Maximum Information Gain
+              </span>
+              <span className={`text-xs font-mono ${isLight ? 'text-blue-700' : 'text-blue-300'}`}>
+                Connected to {recommendedInfo.connectedCount} Concepts
+              </span>
+            </div>
+            <div className={`text-base sm:text-lg font-bold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+              {recommendedInfo.concept.name}
+            </div>
+            <p className={`text-xs max-w-2xl leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+              Connected to <strong className="text-blue-600 dark:text-blue-400">{recommendedInfo.connectedCount} other concepts</strong> ({recommendedInfo.connectedNames.join(', ')}). Calibrating this concept provides maximum psychometric information gain across the knowledge graph.
+            </p>
+          </div>
+          {selectedTopic !== recommendedInfo.concept.name ? (
+            <button
+              type="button"
+              onClick={() => setSelectedTopic(recommendedInfo.concept.name)}
+              className="shrink-0 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition shadow-sm"
+            >
+              Select Recommended
+            </button>
+          ) : (
+            <span className="shrink-0 px-3.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-mono font-semibold flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" />
+              Optimal Probe Selected
+            </span>
+          )}
+        </div>
+
         <div className="space-y-3">
           <label className={`text-xs font-mono uppercase tracking-wider block font-semibold ${
             isLight ? 'text-slate-700' : 'text-slate-300'
           }`}>
-            Target Concept from Knowledge Graph
+            Target Concept from Knowledge Graph (Ranked by Information Gain)
           </label>
           <select
             value={selectedTopic}
@@ -105,7 +155,14 @@ export const PracticeView: React.FC = () => {
                 : 'bg-slate-950 border-slate-700 text-slate-100'
             }`}
           >
-            {concepts.length > 0 ? (
+            {rankedConcepts.length > 0 ? (
+              rankedConcepts.map((item, idx) => (
+                <option key={item.concept.id} value={item.concept.name}>
+                  {idx === 0 ? '✨ [MAX INFO GAIN] ' : ''}
+                  {item.concept.name} ({item.concept.domain || `Tier ${item.concept.tier || 1}`}) — {item.connectedCount} connected concepts — Mastery: {item.concept.estimatedMastery}%
+                </option>
+              ))
+            ) : concepts.length > 0 ? (
               concepts.map((c) => (
                 <option key={c.id} value={c.name}>
                   {c.name} ({c.domain || `Tier ${c.tier || 1}`}) — Mastery: {c.estimatedMastery}%
@@ -118,7 +175,7 @@ export const PracticeView: React.FC = () => {
             )}
           </select>
           <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-            Items will update your latent ability $\theta$ for this topic and propagate variance reduction along adjacent knowledge graph edges.
+            Items will update your latent ability θ for this topic and propagate variance reduction along adjacent knowledge graph edges.
           </p>
         </div>
 

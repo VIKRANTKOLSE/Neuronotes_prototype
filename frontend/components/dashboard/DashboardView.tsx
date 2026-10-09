@@ -17,6 +17,7 @@ import { Concept, MisconceptionItem, ActivityLog } from '@/types';
 import { MasteryBadge } from '@/components/mastery/MasteryBadge';
 import { useApp } from '@/components/layout/ClientLayout';
 import { api } from '@/services/api';
+import { getRecommendedConceptByInformationGain } from '@/lib/informationGain';
 
 interface DashboardViewProps {
   concepts: Concept[];
@@ -55,10 +56,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     refreshData();
   }, [currentUser?.id, userRefreshTrigger]);
 
+  const recommendedInfo = React.useMemo(() => getRecommendedConceptByInformationGain(concepts), [concepts]);
+  const targetConcept = recommendedInfo.concept;
+  const targetConceptId = targetConcept.id;
   const isNew = currentUser?.isNewUser ?? false;
-  const targetConceptId = isNew ? 'effective-nuclear-charge' : 'gibbs-energy';
   const firstName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Vikrant';
   const primaryMisconception = misconceptions[0];
+
 
   const handleInspectConcept = (conceptId: string) => {
     setSelectedConceptId(conceptId);
@@ -167,14 +171,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h2 className={`text-2xl font-bold tracking-tight ${
                 isLight ? 'text-[#172033]' : 'text-slate-100'
               }`}>
-                {isNew ? 'Effective Nuclear Charge' : 'Gibbs Energy (ΔG)'}
+                {targetConcept.name}
               </h2>
               <p className={`text-sm mt-1 leading-relaxed ${
                 isLight ? 'text-[#526176]' : 'text-slate-300'
               }`}>
-                {isNew
-                  ? 'As a new learner, your knowledge graph is uncalibrated. Administering Tier 1 Foundation items for Effective Nuclear Charge establishes your initial latent ability θ and gates downstream periodic trends.'
-                  : 'Your current estimate for Gibbs Energy has high posterior uncertainty (63% confidence). Resolving this is critical before testing dependent concepts like Cell Potential and Equilibrium Constant.'}
+                {recommendedInfo.rationale}
               </p>
             </div>
 
@@ -183,18 +185,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               isLight ? 'bg-[#EEF2F6] text-[#526176]' : 'bg-slate-950/70 text-slate-300'
             }`}>
               <span className={`font-semibold ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>
-                Dependency:
+                Information Gain Centrality:
               </span>
               <span className="font-semibold text-[#2563EB] dark:text-blue-400">
-                {isNew ? 'Tier 1 (Foundation)' : 'Tier 4 (Complex Systems)'}
+                {targetConcept.domain || `Tier ${targetConcept.tier}`}
               </span>
               <span className={isLight ? 'text-[#718096]' : 'text-slate-400'}>
-                {isNew ? '→ Direct Prerequisite For:' : '← Requires Prerequisite:'}
+                • Connected to {recommendedInfo.connectedCount} concepts:
               </span>
               <span>
-                {isNew 
-                  ? 'Atomic Radius, Ionization Enthalpy & Electronegativity Trends' 
-                  : 'Crystal Field Splitting in Octahedral Field & Ligand Field Theory'}
+                {recommendedInfo.connectedNames.slice(0, 3).join(', ')}
               </span>
             </div>
 
@@ -206,12 +206,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 isLight ? 'text-[#172033]' : 'text-slate-200'
               }`}>
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#2563EB] dark:text-blue-400" />
-                3 targeted questions
+                Phase 1 Checkpoint (3 items)
               </span>
               <span>·</span>
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
-                ~7 min estimated
+                ~4 min
               </span>
               <span>·</span>
               <span className={`font-medium px-2 py-0.5 rounded-full border text-xs ${
@@ -219,7 +219,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   ? 'text-[#7C3AED] bg-purple-50 border-purple-200' 
                   : 'text-purple-300 bg-purple-950/40 border-purple-800'
               }`}>
-                Status: Uncertain (Needs Probing)
+                Status: {targetConcept.status === 'insufficient_evidence' ? 'Unprobed Baseline' : targetConcept.status}
               </span>
             </div>
 
@@ -228,9 +228,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className={`pt-2 text-xs font-mono border-t flex flex-wrap items-center gap-4 ${
                 isLight ? 'border-[#EEF2F6] text-[#1D4ED8]' : 'border-slate-800 text-blue-300'
               }`}>
-                <span>Fisher Information I(θ): 1.48</span>
-                <span>Expected Δσ(θ): -0.14</span>
-                <span>Utility Score: 0.94</span>
+                <span>Fisher Information I(θ): {(recommendedInfo.score / 25).toFixed(2)}</span>
+                <span>Graph Degree: {recommendedInfo.connectedCount}</span>
+                <span>Information Gain Score: {recommendedInfo.score}</span>
               </div>
             )}
           </div>
@@ -238,10 +238,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Action CTAs: cleanly aligned */}
           <div className="flex flex-col gap-2 shrink-0 self-start lg:self-center">
             <Link
-              href={`/quiz?conceptId=${encodeURIComponent(targetConceptId)}`}
+              href={`/quiz?topic=${encodeURIComponent(targetConcept.name)}&conceptId=${encodeURIComponent(targetConceptId)}&phase=1`}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm transition"
             >
-              <span>Start Practice →</span>
+              <span>Start Diagnostic Practice →</span>
             </Link>
             <button
               onClick={() => handleInspectConcept(targetConceptId)}
