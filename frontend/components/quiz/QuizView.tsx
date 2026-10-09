@@ -690,33 +690,51 @@ export const QuizView: React.FC<QuizViewProps> = ({
                 }
               }
 
+              let labelBadgeStyle = isLight 
+                ? 'bg-white border-slate-300 text-slate-700' 
+                : 'bg-slate-900 border-slate-700 text-slate-300';
+
+              if (isSubmitted) {
+                if (isCorrectOpt) {
+                  labelBadgeStyle = 'bg-emerald-600 text-white border-emerald-600';
+                } else if (isSelected) {
+                  labelBadgeStyle = 'bg-red-600 text-white border-red-600';
+                }
+              } else if (isSelected) {
+                labelBadgeStyle = 'bg-blue-600 text-white border-blue-600';
+              }
+
               return (
                 <div
                   key={option.id}
                   onClick={() => handleSelectOption(option.id)}
                   className={`p-4 rounded-xl border text-sm transition cursor-pointer flex items-start gap-3.5 ${optionStyle}`}
                 >
-                  <span className={`w-6 h-6 rounded-lg text-xs font-mono font-bold flex items-center justify-center shrink-0 border ${
-                    isSelected 
-                      ? 'bg-blue-600 text-white border-blue-600' 
-                      : isLight ? 'bg-white border-slate-300 text-slate-700' : 'bg-slate-900 border-slate-700 text-slate-300'
-                  }`}>
+                  <span className={`w-6 h-6 rounded-lg text-xs font-mono font-bold flex items-center justify-center shrink-0 border ${labelBadgeStyle}`}>
                     {option.label}
                   </span>
                   <div className="flex-1 space-y-1">
-                    <p className="leading-relaxed">{option.text}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="leading-relaxed font-medium">{option.text}</p>
+                      {isSubmitted && isCorrectOpt && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shrink-0">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          Correct Answer
+                        </span>
+                      )}
+                      {isSubmitted && isSelected && !isCorrectOpt && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300 border border-red-300 dark:border-red-700 shrink-0">
+                          <XCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                          Your Selection
+                        </span>
+                      )}
+                    </div>
                     {isSubmitted && option.isMisconceptionDistractor && option.misconceptionRationale && (
                       <p className="text-[11px] font-mono text-amber-600 dark:text-amber-400 pt-1">
                         Cognitive Misconception Pattern: {option.misconceptionRationale}
                       </p>
                     )}
                   </div>
-                  {isSubmitted && isCorrectOpt && (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                  )}
-                  {isSubmitted && isSelected && !isCorrectOpt && (
-                    <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                  )}
                 </div>
               );
             })}
@@ -754,8 +772,10 @@ export const QuizView: React.FC<QuizViewProps> = ({
                     </>
                   ) : (
                     <>
-                      <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                      <span className="text-red-800 dark:text-red-300">Incorrect Response · Uncertainty Flagged</span>
+                      <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+                      <span className="text-red-800 dark:text-red-300">
+                        Incorrect Response · Uncertainty Flagged — Correct answer is highlighted in green above
+                      </span>
                     </>
                   )}
                 </div>
