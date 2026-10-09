@@ -11,6 +11,7 @@ import misconceptionRoutes from './routes/misconceptionRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import { initDb } from './db.js';
 
 dotenv.config();
 
@@ -61,7 +62,8 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await initDb();
   console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║             NEURONOTES PSYCHOMETRIC BACKEND ENGINE             ║

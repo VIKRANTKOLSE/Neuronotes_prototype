@@ -109,6 +109,8 @@ export class TestService {
       statusBadge: newTest.score >= 75 ? 'strong' : newTest.score >= 50 ? 'developing' : 'weak'
     });
 
+    UserService.saveUser(user);
+
     return newTest;
   }
 
@@ -183,6 +185,8 @@ export class TestService {
       user.notes.unshift(newNote);
     }
 
+    UserService.saveUser(user);
+
     return newNote;
   }
 
@@ -205,6 +209,8 @@ export class TestService {
     if (updates.conceptName !== undefined) note.conceptName = updates.conceptName;
     note.updatedAt = new Date().toISOString();
 
+    UserService.saveUser(user);
+
     return note;
   }
 
@@ -223,6 +229,11 @@ export class TestService {
       }
     });
 
-    return user.notes.length < initialLen;
+    const changed = user.notes.length < initialLen;
+    if (changed) {
+      UserService.saveUser(user);
+    }
+
+    return changed;
   }
 }

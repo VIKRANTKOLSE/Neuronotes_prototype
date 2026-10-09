@@ -30,6 +30,11 @@ export const LoginView: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,20 +48,18 @@ export const LoginView: React.FC = () => {
     }
 
     if (isLogin) {
-      let user = getStoredUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!user) {
-        const emailName = email.split('@')[0];
-        const displayName = emailName
-          .split(/[._-]/)
-          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(' ');
-        user = createUser(displayName, email, password);
+      try {
+        const res = await api.login({ email: email.trim(), password });
+        if (res?.user) {
+          await switchUser(res.user.id);
+          localStorage.setItem('neuronotes-authenticated', '1');
+          setSuccessMessage(`Signed in as ${res.user.name}. Redirecting...`);
+          setTimeout(() => router.push('/'), 500);
+          return;
+        }
+      } catch (err: any) {
+        setErrorMessage(err.message || 'Login failed. Please check credentials or register.');
       }
-      await api.login({ userId: user.id });
-      await switchUser(user.id);
-      localStorage.setItem('neuronotes-authenticated', '1');
-      setSuccessMessage(`Signed in as ${user.name}. Redirecting...`);
-      setTimeout(() => router.push('/'), 500);
     } else {
       try {
         const newUser = createUser(name.trim(), email.trim(), password);
@@ -292,8 +295,8 @@ export const LoginView: React.FC = () => {
             </p>
           </div>
 
-          {/* Registered users list (only when there are stored users) */}
-          {getStoredUsers().length > 0 && (
+          {/* Registered users list (only when mounted and there are stored users) */}
+          {mounted && getStoredUsers().length > 0 && (
             <div className={`rounded-2xl border p-5 space-y-3 ${
               isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
             }`}>

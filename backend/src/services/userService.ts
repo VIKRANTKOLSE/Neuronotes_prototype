@@ -1,5 +1,6 @@
 import { FullUserData, UserProfile } from '../types/index.js';
 import { USERS_STORE } from '../data/users.js';
+import { saveUserToDb } from '../db.js';
 
 let activeUserId: string = 'user-history';
 
@@ -40,5 +41,10 @@ export class UserService {
       return USERS_STORE['user-history'];
     }
     return user;
+  }
+
+  static async saveUser(user: FullUserData, password?: string): Promise<void> {
+    USERS_STORE[user.id] = user;
+    await saveUserToDb(user, password);
   }
 }

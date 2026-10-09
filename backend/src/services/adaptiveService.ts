@@ -119,6 +119,8 @@ export class AdaptiveService {
       statusBadge: isCorrect ? 'strong' : 'developing'
     });
 
+    UserService.saveUser(user);
+
     return {
       isCorrect,
       explanation: question.explanation,

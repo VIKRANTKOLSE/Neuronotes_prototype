@@ -157,13 +157,67 @@ class NeuronotesApiService {
       }
       return res;
     } catch {
-      // Offline fallback: resolve locally via the auth store
+      // Offline fallback: resolve seed users or local auth store
+      const emailLower = (credentials.email || '').toLowerCase().trim();
+      if (emailLower === 'vikrant.kolse@university.edu' || credentials.userId === 'user-history') {
+        this.setCurrentUserId('user-history');
+        return {
+          message: 'Authenticated as Vikrant Kolse',
+          token: 'local-user-history',
+          user: {
+            id: 'user-history',
+            name: 'Vikrant Kolse',
+            email: 'vikrant.kolse@university.edu',
+            major: 'Undergraduate Chemistry (Year 3)',
+            avatarInitials: 'VK',
+            isNewUser: false,
+            overallMastery: 71,
+            estimatedTheta: 0.45,
+            standardError: 0.28,
+            itemsAnswered: 54,
+            reliabilityScore: 89,
+            statusSummary: 'Model calibrated. Gibbs Energy has posterior uncertainty; Nernst Equation requires targeted review.',
+            concepts: CONCEPTS,
+            misconceptions: MISCONCEPTIONS,
+            activities: RECENT_ACTIVITIES,
+            tests: [],
+            notes: [],
+          }
+        };
+      }
+      if (emailLower === 'elena.rostova@university.edu' || credentials.userId === 'user-new') {
+        this.setCurrentUserId('user-new');
+        return {
+          message: 'Authenticated as Elena Rostova',
+          token: 'local-user-new',
+          user: {
+            id: 'user-new',
+            name: 'Elena Rostova',
+            email: 'elena.rostova@university.edu',
+            major: 'First-Year Physical Sciences',
+            avatarInitials: 'ER',
+            isNewUser: true,
+            overallMastery: 0,
+            estimatedTheta: 0.0,
+            standardError: 1.20,
+            itemsAnswered: 0,
+            reliabilityScore: 12,
+            statusSummary: 'Unprobed baseline state. Complete adaptive diagnostic probe to begin calibration.',
+            concepts: CONCEPTS,
+            misconceptions: [],
+            activities: [],
+            tests: [],
+            notes: [],
+          }
+        };
+      }
+
       const userId = credentials.userId
-        || getStoredUsers().find(u => u.email.toLowerCase() === (credentials.email || '').toLowerCase())?.id
+        || getStoredUsers().find(u => u.email.toLowerCase() === emailLower)?.id
         || credentials.email;
 
       const localUser = getStoredUsers().find(u => u.id === userId)
-        || getStoredUsers().find(u => u.email.toLowerCase() === (credentials.email || '').toLowerCase());
+        || getStoredUsers().find(u => u.email.toLowerCase() === emailLower);
 
       if (!localUser) {
         throw new Error('No account found with this email. Please register first.');
