@@ -54,53 +54,47 @@ export class DiagnosticFlowService {
   }
 
   /**
+   * Randomize question option order so correct answers are evenly spread across A, B, C, D
+   */
+  static shuffleQuestionOptions(question: Question): Question {
+    const options = [...question.options];
+    const correctOption = options.find(o => o.id === question.correctOptionId) || options[0];
+
+    // Fisher-Yates shuffle
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+
+    const labels = ['A', 'B', 'C', 'D'];
+    const labeledOptions = options.map((opt, idx) => ({
+      ...opt,
+      label: labels[idx] || String.fromCharCode(65 + idx)
+    }));
+
+    return {
+      ...question,
+      options: labeledOptions,
+      correctOptionId: correctOption.id
+    };
+  }
+
+  /**
    * Phase 1: Generate 3 Easy Foundational Questions testing basic idea
    */
   static async getFundamentalQuestions(conceptIdOrName: string, userId?: string): Promise<Question[]> {
     const concept = this.getConcept(conceptIdOrName);
-    const user = UserService.getUser(userId);
-    const userTheta = user.estimatedTheta || 0.0;
 
     // Check if we have matching high-quality pre-calibrated questions in the canonical database
     const dbMatches = QUESTIONS_DATABASE.filter(q => q.conceptId === concept.id || q.conceptName.toLowerCase() === concept.name.toLowerCase());
     if (dbMatches.length >= 3) {
-      const selected = dbMatches.slice(0, 3);
+      const selected = dbMatches.slice(0, 3).map(q => this.shuffleQuestionOptions(q));
       this.registerQuestions(selected);
       return selected;
     }
 
-    // Attempt fast AI generation with strict 1500ms timeout race to guarantee instantaneous UI
-    try {
-      const aiPromise = AiService.generateAdaptiveTest({
-        conceptIds: [concept.id],
-        tier: concept.tier || 1,
-        numQuestions: 3,
-        userTheta,
-        difficulty: 'foundational'
-      });
-      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500));
-      const aiQuestions = await Promise.race([aiPromise, timeoutPromise]);
-
-      if (aiQuestions && Array.isArray(aiQuestions) && aiQuestions.length >= 3) {
-        const mapped = aiQuestions.slice(0, 3).map((q, idx) => ({
-          ...q,
-          id: `fund-${concept.id}-${idx + 1}-${Date.now().toString(36)}`,
-          diagnosticRationale: {
-            ...q.diagnosticRationale,
-            itemDifficulty: -1.0 + (idx * 0.2),
-            uncertaintyReason: `Foundational Checkpoint Probe #${idx + 1} for ${concept.name}`,
-            recentDifficultyReason: 'Testing fundamental conceptual baseline.'
-          }
-        }));
-        this.registerQuestions(mapped);
-        return mapped;
-      }
-    } catch {
-      // Fast fallback below
-    }
-
-    // Instant Procedural Generation (< 1ms execution time)
-    const procedural = this.generateProceduralFundamentalQuestions(concept);
+    // Instant Procedural Generation (< 1ms execution time) with shuffled options
+    const procedural = this.generateProceduralFundamentalQuestions(concept).map(q => this.shuffleQuestionOptions(q));
     this.registerQuestions(procedural);
     return procedural;
   }
@@ -124,29 +118,9 @@ export class DiagnosticFlowService {
       ...connectedEdges.map(e => e.source === targetConcept.id ? e.target : e.source)
     ])).slice(0, 5);
 
-    // Fast AI generation with strict 1500ms timeout race
-    try {
-      const aiPromise = AiService.generateAdaptiveTest({
-        conceptIds: connectedIds,
-        tier: targetConcept.tier || 1,
-        numQuestions: 10,
-        userTheta,
-        difficulty: 'adaptive'
-      });
-      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500));
-      const aiQuestions = await Promise.race([aiPromise, timeoutPromise]);
-
-      if (aiQuestions && Array.isArray(aiQuestions) && aiQuestions.length >= 10) {
-        const sliced = aiQuestions.slice(0, 10);
-        this.registerQuestions(sliced);
-        return sliced;
-      }
-    } catch {
-      // Fast fallback below
-    }
-
-    // Instant Procedural Generation (< 1ms execution time)
-    const procedural = this.generateProceduralAdaptiveQuestions(targetConcept, connectedIds, userTheta);
+    // Instant Procedural Generation (< 1ms execution time) with shuffled options
+    const procedural = this.generateProceduralAdaptiveQuestions(targetConcept, connectedIds, userTheta)
+      .map(q => this.shuffleQuestionOptions(q));
     this.registerQuestions(procedural);
     return procedural;
   }

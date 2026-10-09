@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Activity, ShieldCheck, Sun, Moon, Users, Check, CheckCircle2, Sparkles, LogIn } from 'lucide-react';
+import { Menu, Activity, ShieldCheck, Sun, Moon, Users, Check, CheckCircle2, Sparkles, LogIn, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useApp } from './ClientLayout';
 
 interface HeaderProps {
@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
 }) => {
   const pathname = usePathname();
-  const { currentUser, allUsers, switchUser } = useApp();
+  const { currentUser, allUsers, switchUser, sidebarCollapsed, toggleSidebar } = useApp();
   const [profileOpen, setProfileOpen] = useState(false);
   const isLight = theme === 'light';
 
@@ -46,8 +46,9 @@ export const Header: React.FC<HeaderProps> = ({
         ? 'bg-[#F8FAFC] border-[#DCE3EA] text-[#172033]' 
         : 'bg-slate-950/80 border-slate-800/80 text-slate-100'
     }`}>
-      {/* Left section: mobile hamburger + screen context */}
+      {/* Left section: mobile hamburger + desktop toggle + screen context */}
       <div className="flex items-center gap-3">
+        {/* Mobile toggle */}
         <button
           onClick={onOpenMobile}
           className={`lg:hidden p-2 rounded-lg ${
@@ -56,6 +57,24 @@ export const Header: React.FC<HeaderProps> = ({
           aria-label="Open navigation menu"
         >
           <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Desktop sidebar toggle button */}
+        <button
+          onClick={toggleSidebar}
+          className={`hidden lg:flex items-center justify-center p-2 rounded-lg border transition ${
+            isLight 
+              ? 'border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100' 
+              : 'border-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+          }`}
+          title={sidebarCollapsed ? 'Open Sidebar' : 'Close Sidebar'}
+          aria-label={sidebarCollapsed ? 'Open Sidebar' : 'Close Sidebar'}
+        >
+          {sidebarCollapsed ? (
+            <PanelLeftOpen className="w-4 h-4" />
+          ) : (
+            <PanelLeftClose className="w-4 h-4" />
+          )}
         </button>
 
         <div>

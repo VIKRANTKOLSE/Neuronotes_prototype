@@ -13,13 +13,16 @@ import {
   BookOpen, 
   Sun, 
   Moon,
-  LogOut
+  LogOut,
+  PanelLeftClose
 } from 'lucide-react';
 import { useApp } from './ClientLayout';
 
 interface SidebarProps {
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
 }
@@ -27,6 +30,8 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   onCloseMobile,
+  collapsed = false,
+  onToggleCollapse,
   theme,
   onToggleTheme,
 }) => {
@@ -62,41 +67,63 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Sidebar Container */}
-      <aside className={`fixed top-0 bottom-0 left-0 w-64 z-50 flex flex-col transition-all duration-200 lg:translate-x-0 border-r ${
+      <aside className={`fixed top-0 bottom-0 left-0 w-64 z-50 flex flex-col transition-transform duration-200 ease-in-out border-r ${
         isLight 
           ? 'bg-[#F8FAFC] border-[#DCE3EA] text-[#172033]' 
           : 'bg-slate-950 border-slate-800/90 text-slate-100'
       } ${
-        mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        mobileOpen 
+          ? 'translate-x-0' 
+          : collapsed 
+            ? '-translate-x-full' 
+            : 'translate-x-0 lg:translate-x-0 -translate-x-full'
       }`}>
         {/* Brand Header */}
-        <div className={`h-16 flex items-center px-6 border-b gap-3 ${
+        <div className={`h-16 flex items-center justify-between px-5 border-b ${
           isLight ? 'border-[#DCE3EA]' : 'border-slate-800/80'
         }`}>
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
-            isLight 
-              ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]' 
-              : 'bg-blue-600/20 text-blue-400 border-blue-500/40'
-          }`}>
-            <BookOpen className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className={`font-semibold tracking-tight text-base font-sans ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
-                Neuronotes
-              </span>
-              <span className={`text-[10px] font-mono uppercase px-1 rounded border ${
-                isLight 
-                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]' 
-                  : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-              }`}>
-                MIRT
-              </span>
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
+              isLight 
+                ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]' 
+                : 'bg-blue-600/20 text-blue-400 border-blue-500/40'
+            }`}>
+              <BookOpen className="w-4 h-4" />
             </div>
-            <p className={`text-[11px] font-mono ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
-              Psychometric Engine
-            </p>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className={`font-semibold tracking-tight text-base font-sans ${isLight ? 'text-[#172033]' : 'text-slate-100'}`}>
+                  Neuronotes
+                </span>
+                <span className={`text-[10px] font-mono uppercase px-1 rounded border ${
+                  isLight 
+                    ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]' 
+                    : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                }`}>
+                  MIRT
+                </span>
+              </div>
+              <p className={`text-[11px] font-mono ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
+                Psychometric Engine
+              </p>
+            </div>
           </div>
+
+          {/* Close / Collapse button */}
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className={`p-1.5 rounded-lg border transition ${
+                isLight 
+                  ? 'border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100' 
+                  : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+              title="Close Sidebar"
+              aria-label="Close Sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Links */}

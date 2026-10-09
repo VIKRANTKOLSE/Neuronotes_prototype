@@ -23,7 +23,7 @@ import {
 import { Question, SubmissionResult, PastTestQuestionReview } from '@/types';
 import { useApp } from '@/components/layout/ClientLayout';
 import { api } from '@/services/api';
-import { QUESTIONS_POOL, CANONICAL_EDGES } from '@/lib/mockData';
+import { QUESTIONS_POOL, CANONICAL_EDGES, shuffleQuestionOptions } from '@/lib/mockData';
 
 interface QuizViewProps {
   initialQuestion?: Question;
@@ -94,19 +94,20 @@ export const QuizView: React.FC<QuizViewProps> = ({
         const fundamentalQs = await api.getFundamentalQuestions(targetConcept);
         if (fundamentalQs && fundamentalQs.length > 0) {
           setCurrentQuestion(fundamentalQs[0]);
-          setQuestionsQueue(fundamentalQs.slice(1));
+          setQuestionsQueue(fundamentalQs.slice(1, 3));
         }
       } else {
         const adaptiveQs = await api.getAdaptiveQuizQuestions(targetConcept);
         if (adaptiveQs && adaptiveQs.length > 0) {
           setCurrentQuestion(adaptiveQs[0]);
-          setQuestionsQueue(adaptiveQs.slice(1));
+          setQuestionsQueue(adaptiveQs.slice(1, 10));
         }
       }
     } catch (err) {
       console.warn('Failed to load phase questions, using default pool:', err);
-      setCurrentQuestion(QUESTIONS_POOL[0]);
-      setQuestionsQueue(QUESTIONS_POOL.slice(1, targetPhase === 1 ? 3 : 10));
+      const fallbackList = QUESTIONS_POOL.map(shuffleQuestionOptions);
+      setCurrentQuestion(fallbackList[0]);
+      setQuestionsQueue(fallbackList.slice(1, targetPhase === 1 ? 3 : 10));
     } finally {
       setIsQuestionsLoading(false);
     }
@@ -273,17 +274,9 @@ export const QuizView: React.FC<QuizViewProps> = ({
     }
   };
 
-  const handleNextQuestion = () => {
-    if (questionsQueue.length > 0) {
-      const nextQ = questionsQueue[0];
-      setQuestionsQueue((prev) => prev.slice(1));
-      setCurrentQuestion(nextQ);
-      setQuestionIndex((prev) => prev + 1);
-      setSelectedOptionId(null);
-      setIsSubmitted(false);
-      setSubmissionResult(null);
-    } else {
-      // Completed current phase questions!
+  const handleNextQuestion = async () => {
+    // If user has already answered all questions for the current phase, trigger evaluation/finish modal
+    if (questionIndex >= totalQuestions) {
       if (phase === 1) {
         const correctCount = sessionReviews.filter(r => r.isCorrect).length;
         setPhase1Completed(true);
@@ -294,27 +287,70 @@ export const QuizView: React.FC<QuizViewProps> = ({
           api.getConceptSummary(conceptId).then(setConceptSummaryData);
         }
       } else {
-        // Phase 2 completed! Open finish modal
+        // Phase 2 completed all 10 items! Open finish modal
         setFinishModalOpen(true);
       }
+      return;
+    }
+
+    // questionIndex < totalQuestions: strictly proceed to next item
+    if (questionsQueue.length > 0) {
+      const nextQ = questionsQueue[0];
+      setQuestionsQueue((prev) => prev.slice(1));
+      setCurrentQuestion(nextQ);
+      setQuestionIndex((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setIsSubmitted(false);
+      setSubmissionResult(null);
+      return;
+    }
+
+    // Defensive replenishment: questionIndex < totalQuestions, but questionsQueue was exhausted
+    try {
+      setIsQuestionsLoading(true);
+      const moreQs = await api.getAdaptiveQuizQuestions(conceptId);
+      const seenIds = new Set([currentQuestion.id, ...sessionReviews.map(r => r.questionId)]);
+      const fresh = moreQs.filter(q => !seenIds.has(q.id));
+      const poolToUse = fresh.length > 0 ? fresh : moreQs;
+      const nextQ = poolToUse[0] || QUESTIONS_POOL[questionIndex % QUESTIONS_POOL.length];
+      const remainingNeeded = totalQuestions - (questionIndex + 1);
+
+      setQuestionsQueue(poolToUse.slice(1, 1 + remainingNeeded));
+      setCurrentQuestion(nextQ);
+      setQuestionIndex((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setIsSubmitted(false);
+      setSubmissionResult(null);
+    } catch (err) {
+      console.warn('Fallback to next pool item:', err);
+      const fallbackItem = QUESTIONS_POOL[questionIndex % QUESTIONS_POOL.length];
+      setCurrentQuestion(shuffleQuestionOptions(fallbackItem));
+      setQuestionIndex((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setIsSubmitted(false);
+      setSubmissionResult(null);
+    } finally {
+      setIsQuestionsLoading(false);
     }
   };
 
   // User unlocks Phase 2 after passing Phase 1
   const handleProceedToPhase2 = () => {
-    setPhase(2);
     setPhase1Completed(false);
     setPhase1Passed(false);
-    loadPhaseQuestions(2, conceptId);
+    setPhase(2);
   };
 
   // User retests fundamentals after reading summary
   const handleRetestFundamentals = () => {
-    setPhase(1);
     setPhase1Completed(false);
     setPhase1Passed(false);
     setConceptSummaryData(null);
-    loadPhaseQuestions(1, conceptId);
+    if (phase === 1) {
+      loadPhaseQuestions(1, conceptId);
+    } else {
+      setPhase(1);
+    }
   };
 
   const handleFinishAndSaveTest = async () => {

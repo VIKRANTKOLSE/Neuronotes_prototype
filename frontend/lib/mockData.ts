@@ -2517,8 +2517,434 @@ export const QUESTIONS_POOL: Question[] = [
       prerequisiteCoverageIndex: 0.95,
       utilityScore: 0.91,
     }
+  },
+  {
+    id: 'q-cellpot-03',
+    conceptId: 'cell-pot-05',
+    conceptName: 'Cell Potential (E°cell)',
+    subject: 'Electrochemistry',
+    stem: 'When balancing a redox equation for a galvanic cell, a student multiplies the anode half-reaction by 2 to balance transferred electrons. How does this factor affect the standard reduction potential of that half-reaction?',
+    contextNotation: 'E° is an intensive thermodynamic quantity (Joules per Coulomb).',
+    options: [
+      {
+        id: 'opt-cp-a',
+        label: 'A',
+        text: 'E° remains strictly unchanged because electric potential is an intensive property that does not scale with quantity of substance.',
+      },
+      {
+        id: 'opt-cp-b',
+        label: 'B',
+        text: 'E° must be multiplied by 2 because twice the number of electrons are flowing through the circuit.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Conflates intensive electrical potential (Volts = J/C) with extensive free energy (ΔG = -nFE).',
+      },
+      {
+        id: 'opt-cp-c',
+        label: 'C',
+        text: 'E° is squared because equilibrium constants scale exponentially with reaction coefficients.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Confusing potential addition with equilibrium constant manipulation.',
+      },
+      {
+        id: 'opt-cp-d',
+        label: 'D',
+        text: 'E° changes sign to preserve conservation of charge across the membrane.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-cp-a',
+    explanation: 'Standard reduction potential E° is an intensive property (defined as energy per unit charge, 1 V = 1 J/C). Multiplying half-reaction coefficients multiplies both the free energy change (ΔG) and the moles of electrons transferred (n) by the same factor, leaving the ratio E° = -ΔG / (nF) unchanged.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Probes the intensive vs. extensive property boundary in electrochemical potentials.',
+      recentDifficultyReason: 'Common misconception trigger for stoichiometric coefficient manipulation in redox systems.',
+      prerequisiteReason: 'Foundational requirement for properly calculating E°cell from half-cell tables.',
+      informationGainReason: 'High diagnostic discrimination for students confusing Gibbs energy with potential.',
+      fisherInformation: 1.55,
+      estimatedTheta: 0.25,
+      standardError: 0.32,
+      itemDiscrimination: 1.95,
+      itemDifficulty: 0.10,
+      prerequisiteCoverageIndex: 0.92,
+      utilityScore: 0.88,
+    }
+  },
+  {
+    id: 'q-thermo-04',
+    conceptId: 'thermo-01',
+    conceptName: 'Thermodynamics Foundations',
+    subject: 'Inorganic Chemistry',
+    stem: 'Which statement correctly characterizes a state function in classical chemical thermodynamics?',
+    contextNotation: 'First Law: ΔU = q + w  •  Path vs State Functions',
+    options: [
+      {
+        id: 'opt-th-a',
+        label: 'A',
+        text: 'Its change depends solely on the initial and final states of the system, irrespective of the transformation pathway taken.',
+      },
+      {
+        id: 'opt-th-b',
+        label: 'B',
+        text: 'Its value depends directly on whether heat transfer occurs reversibly or irreversibly during the process.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Heat (q) is a path function, not a state function.',
+      },
+      {
+        id: 'opt-th-c',
+        label: 'C',
+        text: 'Work (w) is a quintessential state function because mechanical energy is conserved in isolated systems.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Work (w) is a path-dependent quantity.',
+      },
+      {
+        id: 'opt-th-d',
+        label: 'D',
+        text: 'State functions can only be defined for ideal gases undergoing isothermal expansions.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-th-a',
+    explanation: 'A state function (such as U, H, S, G) has values determined uniquely by the present thermodynamic state of the system (T, P, V, composition). The integral over any cyclic process is identically zero: ∮ dX = 0.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Baseline calibration item for first-law thermodynamics competency.',
+      recentDifficultyReason: 'Foundational anchor for subsequent thermochemical concepts.',
+      prerequisiteReason: 'Prerequisite for Enthalpy and Entropy understanding.',
+      informationGainReason: 'High reliability item for initial learner baseline estimation.',
+      fisherInformation: 1.35,
+      estimatedTheta: -0.50,
+      standardError: 0.35,
+      itemDiscrimination: 1.60,
+      itemDifficulty: -0.65,
+      prerequisiteCoverageIndex: 1.00,
+      utilityScore: 0.82,
+    }
+  },
+  {
+    id: 'q-eqconst-05',
+    conceptId: 'eq-const-07',
+    conceptName: 'Equilibrium Constant (K)',
+    subject: 'Chemical Equilibria',
+    stem: 'At 298 K, a biochemical reaction has standard Gibbs free energy change ΔG° = +17.1 kJ/mol. What is the value of the thermodynamic equilibrium constant K, and what does this imply about product formation at equilibrium?',
+    contextNotation: 'ΔG° = -RT ln(K)  •  R = 8.314 J/(mol·K)  •  T = 298 K  •  RT ≈ 2.478 kJ/mol',
+    options: [
+      {
+        id: 'opt-eq-a',
+        label: 'A',
+        text: 'K ≈ 1.0 × 10⁻³; reactants are strongly favored at equilibrium because ΔG° is positive.',
+      },
+      {
+        id: 'opt-eq-b',
+        label: 'B',
+        text: 'K ≈ 1.0 × 10³; products are strongly favored at equilibrium because positive free energy indicates high stored product potential.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Sign error in ln(K) = -ΔG° / RT leading to inverted equilibrium ratio.',
+      },
+      {
+        id: 'opt-eq-c',
+        label: 'C',
+        text: 'K = 0; reactions with positive ΔG° cannot proceed under any experimental conditions.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Endergonic reactions still reach dynamic equilibrium with K > 0.',
+      },
+      {
+        id: 'opt-eq-d',
+        label: 'D',
+        text: 'K = 1.0; because standard state concentrations are defined as unity (1 M).',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-eq-a',
+    explanation: 'From ΔG° = -RT ln(K), we have ln(K) = -ΔG° / (RT) = -(17,100 J/mol) / (8.314 J/(mol·K) × 298 K) = -6.90. Thus K = e^(-6.90) ≈ 1.0 × 10⁻³. Since K << 1, the equilibrium heavily favors reactants under standard state conditions.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Evaluates algebraic proficiency with exponential thermodynamic relations.',
+      recentDifficultyReason: 'Common point of confusion regarding signs and magnitude of equilibrium constant.',
+      prerequisiteReason: 'Direct coupling between equilibrium chemistry and electrochemical Nernst equation.',
+      informationGainReason: 'Discriminates between calculation errors and conceptual misunderstanding of spontaneity.',
+      fisherInformation: 1.42,
+      estimatedTheta: 0.15,
+      standardError: 0.33,
+      itemDiscrimination: 1.75,
+      itemDifficulty: 0.20,
+      prerequisiteCoverageIndex: 0.88,
+      utilityScore: 0.86,
+    }
+  },
+  {
+    id: 'q-enc-06',
+    conceptId: 'effective-nuclear-charge',
+    conceptName: 'Effective Nuclear Charge',
+    subject: 'Inorganic Chemistry',
+    stem: 'Why does effective nuclear charge (Z_eff) experienced by valence electrons increase significantly across Period 2 from Lithium (Z=3) to Fluorine (Z=9)?',
+    contextNotation: 'Z_eff = Z - S  •  Slater’s Rules for Screening',
+    options: [
+      {
+        id: 'opt-enc-a',
+        label: 'A',
+        text: 'Each additional proton adds +1 to nuclear charge Z, while electrons added to the same valence shell shield each other poorly (S increases by only ~0.35 per electron).',
+      },
+      {
+        id: 'opt-enc-b',
+        label: 'B',
+        text: 'The principal quantum number n increases with each step, pulling valence electrons into deeper quantum wells.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Principal quantum number n remains 2 across the entirety of Period 2.',
+      },
+      {
+        id: 'opt-enc-c',
+        label: 'C',
+        text: 'Core 1s electrons lose their shielding capability as temperature rises across the periodic table.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: '1s core screening remains essentially constant (~1.70 to ~1.85) and temperature is irrelevant to atomic shielding.',
+      },
+      {
+        id: 'opt-enc-d',
+        label: 'D',
+        text: 'Valence electrons undergo pair-annihilation, halving the electrostatic repulsion.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-enc-a',
+    explanation: 'Across a period, nuclear charge Z increases by 1 for each successive element. The added electrons enter the same valence shell (n=2), where they shield each other inefficiently (screening constant increases by only ~0.35). Thus, Z_eff = Z - S increases steadily by ~0.65 per element.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Tests fundamental atomic structure knowledge.',
+      recentDifficultyReason: 'Core diagnostic anchor for periodic properties.',
+      prerequisiteReason: 'Direct determinant for atomic radius, ionization energy, and electronegativity.',
+      informationGainReason: 'High discrimination item for electrostatic screening mechanics.',
+      fisherInformation: 1.65,
+      estimatedTheta: -0.10,
+      standardError: 0.30,
+      itemDiscrimination: 1.90,
+      itemDifficulty: -0.20,
+      prerequisiteCoverageIndex: 0.95,
+      utilityScore: 0.92,
+    }
+  },
+  {
+    id: 'q-radius-07',
+    conceptId: 'atomic-radius-trend',
+    conceptName: 'Atomic Radius Trend',
+    subject: 'Inorganic Chemistry',
+    stem: 'How does atomic radius change across a period from left to right, and what electrostatic mechanism accounts for this behavior?',
+    contextNotation: 'Periodic Trends • Coulombic Force F ∝ (q1 · q2) / r²',
+    options: [
+      {
+        id: 'opt-rad-a',
+        label: 'A',
+        text: 'It decreases because higher effective nuclear charge draws the electron cloud closer to the nucleus within the same principal shell.',
+      },
+      {
+        id: 'opt-rad-b',
+        label: 'B',
+        text: 'It increases because adding more electrons creates stronger inter-electronic repulsion that expands the atomic volume.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Confuses electron-electron repulsion with the dominant effect of increasing nuclear charge.',
+      },
+      {
+        id: 'opt-rad-c',
+        label: 'C',
+        text: 'It stays constant because the number of occupied principal energy levels does not change across a period.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Ignores the monotonic increase in attractive force from the nucleus.',
+      },
+      {
+        id: 'opt-rad-d',
+        label: 'D',
+        text: 'It alternates unpredictably between odd and even atomic numbers.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-rad-a',
+    explanation: 'Within any period, electrons are added to the same principal shell while the number of protons increases. The increased effective nuclear charge exerts a stronger electrostatic pull on valence electrons, contracting the atomic radius.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Assesses mastery of atomic dimension trends.',
+      recentDifficultyReason: 'Common misconception that more electrons means bigger radius across a period.',
+      prerequisiteReason: 'Dependent on Effective Nuclear Charge understanding.',
+      informationGainReason: 'High Fisher information for periodic trend calibration.',
+      fisherInformation: 1.58,
+      estimatedTheta: -0.30,
+      standardError: 0.31,
+      itemDiscrimination: 1.80,
+      itemDifficulty: -0.40,
+      prerequisiteCoverageIndex: 0.90,
+      utilityScore: 0.90,
+    }
+  },
+  {
+    id: 'q-ie-08',
+    conceptId: 'ionization-energy-trend',
+    conceptName: 'Ionization Energy Trend',
+    subject: 'Inorganic Chemistry',
+    stem: 'Why is the first ionization energy of Oxygen (Z=8, 1314 kJ/mol) slightly lower than that of Nitrogen (Z=7, 1402 kJ/mol), contrary to the general period trend?',
+    contextNotation: 'N: [He] 2s² 2p³  vs  O: [He] 2s² 2p⁴  •  Hund’s Rule & Exchange Energy',
+    options: [
+      {
+        id: 'opt-ie-a',
+        label: 'A',
+        text: 'Oxygen has a paired electron in one of its 2p orbitals; inter-electronic spin repulsion in that doubly occupied orbital makes removing that electron energetically easier.',
+      },
+      {
+        id: 'opt-ie-b',
+        label: 'B',
+        text: 'Nitrogen possesses an incomplete shell, so its nuclear charge shields the valence electrons much less effectively than Oxygen.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Nitrogen has smaller nuclear charge Z=7 vs Oxygen Z=8.',
+      },
+      {
+        id: 'opt-ie-c',
+        label: 'C',
+        text: 'Oxygen’s 2p electrons experience relativistic contraction that pushes them into higher energy continuum states.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Relativistic effects are negligible in second-row light elements.',
+      },
+      {
+        id: 'opt-ie-d',
+        label: 'D',
+        text: 'Oxygen valence electrons occupy the 3s orbital due to thermal excitation at standard temperature.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-ie-a',
+    explanation: 'Nitrogen has a half-filled 2p subshell (2p³ with parallel spins), which possesses maximized exchange stabilization. In Oxygen (2p⁴), the fourth electron must pair up with an existing electron in one of the 2p orbitals. The Coulombic repulsion between the two paired electrons in the same orbital raises its energy, lowering the first ionization energy.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Differentiates rote trend memorization from quantum mechanical subshell understanding.',
+      recentDifficultyReason: 'Classic periodic anomaly testing orbital filling principles.',
+      prerequisiteReason: 'Builds on Hund\'s rule and orbital electron pairing.',
+      informationGainReason: 'Distinguishes advanced quantum reasoning from superficial trend rules.',
+      fisherInformation: 1.70,
+      estimatedTheta: 0.40,
+      standardError: 0.28,
+      itemDiscrimination: 2.05,
+      itemDifficulty: 0.35,
+      prerequisiteCoverageIndex: 0.94,
+      utilityScore: 0.93,
+    }
+  },
+  {
+    id: 'q-shielding-09',
+    conceptId: 'shielding-effect',
+    conceptName: 'Shielding Effect',
+    subject: 'Inorganic Chemistry',
+    stem: 'According to Slater’s rules and radial distribution functions, which type of orbital provides the MOST effective screening/shielding for outer electrons against the nuclear charge?',
+    contextNotation: 'Slater’s Rules  •  Radial Probability Distributions P(r) = r² |R(r)|²',
+    options: [
+      {
+        id: 'opt-sh-a',
+        label: 'A',
+        text: 's-orbitals, because their lack of angular nodes gives them high electron density near the nucleus (highest penetration power).',
+      },
+      {
+        id: 'opt-sh-b',
+        label: 'B',
+        text: 'f-orbitals, because their large number of radial nodes spreads electron charge over the widest geometric radius.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Diffuse f and d orbitals have very poor penetration and provide the weakest shielding.',
+      },
+      {
+        id: 'opt-sh-c',
+        label: 'C',
+        text: 'd-orbitals, because their double cloverleaf symmetry cancels out the nuclear dipole moment.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'd-orbitals are diffuse with two angular nodes and shield poorly, causing d-block contraction.',
+      },
+      {
+        id: 'opt-sh-d',
+        label: 'D',
+        text: 'All orbitals with the same principal quantum number n provide identical shielding regardless of azimuthal quantum number l.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-sh-a',
+    explanation: 'Radial penetration power follows the sequence s > p > d > f. Due to non-zero probability density at r = 0, s-electrons spend significant time close to the nucleus, effectively screening valence electrons from the full nuclear charge. Conversely, d and f orbitals are diffuse and shield poorly.',
+    diagnosticRationale: {
+      uncertaintyReason: 'Probes orbital penetration and screening competency.',
+      recentDifficultyReason: 'Essential foundation for transition metal chemistry and lanthanide contraction.',
+      prerequisiteReason: 'Required for calculating accurate Slater screening constants.',
+      informationGainReason: 'High discrimination for electronic structure fundamentals.',
+      fisherInformation: 1.62,
+      estimatedTheta: 0.10,
+      standardError: 0.32,
+      itemDiscrimination: 1.85,
+      itemDifficulty: 0.05,
+      prerequisiteCoverageIndex: 0.91,
+      utilityScore: 0.89,
+    }
+  },
+  {
+    id: 'q-electroneg-10',
+    conceptId: 'electronegativity-scale',
+    conceptName: 'Electronegativity',
+    subject: 'Inorganic Chemistry',
+    stem: 'On the Pauling electronegativity scale, what fundamental energetic difference is used to quantify the electronegativity difference (Δχ) between two bonded atoms A and B?',
+    contextNotation: 'Pauling equation: D(A-B)_actual - [D(A-A) · D(B-B)]^(1/2) = 96.5 · (χ_A - χ_B)²',
+    options: [
+      {
+        id: 'opt-el-a',
+        label: 'A',
+        text: 'The extra ionic resonance energy by which the experimental hetero-nuclear bond dissociation energy exceeds the geometric mean of the homo-nuclear bond energies.',
+      },
+      {
+        id: 'opt-el-b',
+        label: 'B',
+        text: 'The difference between the first ionization energy and electron affinity of the isolated neutral atom.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'That is the definition of Mulliken electronegativity (χ_M = (IE + EA)/2), not Pauling.',
+      },
+      {
+        id: 'opt-el-c',
+        label: 'C',
+        text: 'The ratio of nuclear mass to van der Waals radius in standard crystal lattices.',
+        isMisconceptionDistractor: true,
+        misconceptionRationale: 'Electronegativity is an electronic property independent of nuclear mass.',
+      },
+      {
+        id: 'opt-el-d',
+        label: 'D',
+        text: 'The dipole moment induced by solvent polarization at 298 K.',
+        isMisconceptionDistractor: true,
+      }
+    ],
+    correctOptionId: 'opt-el-a',
+    explanation: 'Linus Pauling defined electronegativity based on thermochemical bond dissociation energies. A polar covalent bond A-B is stronger than purely covalent bonds due to ionic resonance stabilization. The excess bond energy Δ = D(A-B) - √[D(A-A) · D(B-B)] relates directly to (χ_A - χ_B)²',
+    diagnosticRationale: {
+      uncertaintyReason: 'Distinguishes between Pauling thermochemical scale and Mulliken electronic scale.',
+      recentDifficultyReason: 'Advanced chemical bonding diagnostic.',
+      prerequisiteReason: 'Synthesizes covalent bonding, polarity, and thermochemistry.',
+      informationGainReason: 'High ability discriminator for physical-inorganic chemistry.',
+      fisherInformation: 1.68,
+      estimatedTheta: 0.50,
+      standardError: 0.29,
+      itemDiscrimination: 2.10,
+      itemDifficulty: 0.45,
+      prerequisiteCoverageIndex: 0.93,
+      utilityScore: 0.91,
+    }
   }
 ];
+
+/**
+ * Client-side option randomizer ensuring correct answers are distributed evenly across A, B, C, D
+ */
+export function shuffleQuestionOptions(question: Question): Question {
+  const options = [...question.options];
+  const correctOption = options.find(o => o.id === question.correctOptionId) || options[0];
+
+  // Fisher-Yates shuffle
+  for (let i = options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+
+  const labels = ['A', 'B', 'C', 'D'];
+  const labeledOptions = options.map((opt, idx) => ({
+    ...opt,
+    label: labels[idx] || String.fromCharCode(65 + idx)
+  }));
+
+  return {
+    ...question,
+    options: labeledOptions,
+    correctOptionId: correctOption.id
+  };
+}
 
 export const MISCONCEPTIONS: MisconceptionItem[] = [
   {

@@ -11,6 +11,9 @@ import { api } from '@/services/api';
 interface AppContextType {
   theme: 'dark' | 'light';
   toggleTheme: () => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  toggleSidebar: () => void;
   activeMisconception: MisconceptionItem | null;
   openMisconception: (item: MisconceptionItem) => void;
   closeMisconception: () => void;
@@ -42,6 +45,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [activeMisconception, setActiveMisconception] = useState<MisconceptionItem | null>(null);
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null);
@@ -49,6 +53,19 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [userRefreshTrigger, setUserRefreshTrigger] = useState<number>(0);
+
+  // Automatically collapse sidebar when a test starts (/quiz) for distraction-free full-screen testing
+  useEffect(() => {
+    if (pathname === '/quiz' || pathname?.startsWith('/quiz/')) {
+      setSidebarCollapsed(true);
+    } else {
+      setSidebarCollapsed(false);
+    }
+  }, [pathname]);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
+  };
 
   // Detect auth pages — no nav chrome on login
   const isAuthPage = pathname === '/login' || pathname?.startsWith('/login/');
@@ -133,6 +150,9 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
       value={{
         theme,
         toggleTheme,
+        sidebarCollapsed,
+        setSidebarCollapsed,
+        toggleSidebar,
         activeMisconception,
         openMisconception,
         closeMisconception,
@@ -160,19 +180,27 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
             <Sidebar
               mobileOpen={mobileOpen}
               onCloseMobile={() => setMobileOpen(false)}
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={toggleSidebar}
               theme={theme}
               onToggleTheme={toggleTheme}
             />
 
             {/* Main Content Area */}
-            <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
+            <div className={`flex-1 flex flex-col min-h-screen transition-[padding] duration-200 ease-in-out ${
+              sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-64'
+            }`}>
               <Header
                 onOpenMobile={() => setMobileOpen(true)}
                 theme={theme}
                 onToggleTheme={toggleTheme}
               />
 
-              <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+              <main className={`flex-1 p-4 sm:p-6 lg:p-8 w-full mx-auto transition-all duration-200 ${
+                pathname === '/quiz' || pathname?.startsWith('/quiz/')
+                  ? 'max-w-6xl'
+                  : 'max-w-7xl'
+              }`}>
                 {children}
               </main>
             </div>

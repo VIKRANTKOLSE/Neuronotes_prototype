@@ -19,7 +19,8 @@ import {
   CANONICAL_EDGES,
   QUESTIONS_POOL, 
   MISCONCEPTIONS, 
-  RECENT_ACTIVITIES 
+  RECENT_ACTIVITIES,
+  shuffleQuestionOptions
 } from '../lib/mockData';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -389,13 +390,21 @@ class NeuronotesApiService {
         `/api/questions/fundamentals?concept_id=${encodeURIComponent(conceptId)}`,
         { method: 'GET' }
       );
+      if (res?.questions && res.questions.length >= 3) {
+        return res.questions.map(shuffleQuestionOptions);
+      }
       if (res?.questions && res.questions.length > 0) {
-        return res.questions;
+        const expanded: Question[] = [...res.questions];
+        while (expanded.length < 3) {
+          const item = QUESTIONS_POOL[expanded.length % QUESTIONS_POOL.length];
+          expanded.push({ ...item, id: `${item.id}-fund-${expanded.length + 1}` });
+        }
+        return expanded.map(shuffleQuestionOptions);
       }
     } catch (e) {
       console.warn('Backend fundamental questions failed, using fallback:', e);
     }
-    return QUESTIONS_POOL.slice(0, 3);
+    return QUESTIONS_POOL.slice(0, 3).map(shuffleQuestionOptions);
   }
 
   /**
@@ -407,13 +416,35 @@ class NeuronotesApiService {
         `/api/questions/adaptive-quiz?concept_id=${encodeURIComponent(conceptId)}`,
         { method: 'GET' }
       );
+      if (res?.questions && res.questions.length >= 10) {
+        return res.questions.map(shuffleQuestionOptions);
+      }
       if (res?.questions && res.questions.length > 0) {
-        return res.questions;
+        // If fewer than 10 returned, fill remaining up to 10
+        const expanded: Question[] = [...res.questions];
+        while (expanded.length < 10) {
+          const item = QUESTIONS_POOL[expanded.length % QUESTIONS_POOL.length];
+          expanded.push({
+            ...item,
+            id: `${item.id}-pool-${expanded.length + 1}`
+          });
+        }
+        return expanded.map(shuffleQuestionOptions);
       }
     } catch (e) {
       console.warn('Backend adaptive quiz questions failed, using fallback:', e);
     }
-    return QUESTIONS_POOL.slice(0, 10);
+    
+    // Guaranteed 10 items in fallback mode with randomized options
+    const fallbackList: Question[] = [];
+    while (fallbackList.length < 10) {
+      const base = QUESTIONS_POOL[fallbackList.length % QUESTIONS_POOL.length];
+      fallbackList.push({
+        ...base,
+        id: `${base.id}-fallback-${fallbackList.length + 1}`
+      });
+    }
+    return fallbackList.map(shuffleQuestionOptions);
   }
 
   /**
