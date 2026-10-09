@@ -325,6 +325,73 @@ class NeuronotesApiService {
   }
 
   /**
+   * Phase 1: Retrieve 3 easy fundamental questions testing basic idea of the concept
+   */
+  async getFundamentalQuestions(conceptId: string): Promise<Question[]> {
+    try {
+      const res = await this.request<{ success: boolean; phase: number; count: number; questions: Question[] }>(
+        `/api/questions/fundamentals?concept_id=${encodeURIComponent(conceptId)}`,
+        { method: 'GET' }
+      );
+      if (res?.questions && res.questions.length > 0) {
+        return res.questions;
+      }
+    } catch (e) {
+      console.warn('Backend fundamental questions failed, using fallback:', e);
+    }
+    return QUESTIONS_POOL.slice(0, 3);
+  }
+
+  /**
+   * Phase 2: Retrieve 10 adaptive questions testing concept + interconnected concepts
+   */
+  async getAdaptiveQuizQuestions(conceptId: string): Promise<Question[]> {
+    try {
+      const res = await this.request<{ success: boolean; phase: number; count: number; questions: Question[] }>(
+        `/api/questions/adaptive-quiz?concept_id=${encodeURIComponent(conceptId)}`,
+        { method: 'GET' }
+      );
+      if (res?.questions && res.questions.length > 0) {
+        return res.questions;
+      }
+    } catch (e) {
+      console.warn('Backend adaptive quiz questions failed, using fallback:', e);
+    }
+    return QUESTIONS_POOL.slice(0, 10);
+  }
+
+  /**
+   * Retrieve conceptual summary/refresher when user fails Phase 1
+   */
+  async getConceptSummary(conceptId: string): Promise<any> {
+    try {
+      const res = await this.request<{ success: boolean; summary: any }>(
+        `/api/questions/summary?concept_id=${encodeURIComponent(conceptId)}`,
+        { method: 'GET' }
+      );
+      if (res?.summary) {
+        return res.summary;
+      }
+    } catch (e) {
+      console.warn('Backend concept summary failed, using fallback:', e);
+    }
+    return {
+      conceptId,
+      conceptName: conceptId,
+      domain: 'Inorganic Chemistry',
+      tier: 1,
+      coreDefinition: `Key conceptual foundation for ${conceptId}. Review electron configuration and governing physical laws.`,
+      governingPrinciples: [
+        'Atomic and molecular states follow thermodynamic free energy minimization.',
+        'Radial distribution functions dictate effective nuclear attraction and shielding.'
+      ],
+      keyEquations: ['Z_eff = Z - S', 'ΔG = ΔH - TΔS'],
+      commonMisconceptions: ['Applying superficial trend heuristics without checking electronic states.'],
+      recommendedReview: 'Read the foundational principles and retry the 3-question checkpoint.'
+    };
+  }
+
+  /**
    * Generate an adaptive diagnostic test powered by Neuronotes Psychometric AI Engine
    */
   async generateAiTest(params?: {

@@ -14,6 +14,7 @@ import { Concept, MasteryStatus } from '@/types';
 import { MasteryBadge } from '@/components/mastery/MasteryBadge';
 import { ConfidenceMeter } from '@/components/mastery/ConfidenceMeter';
 import { useApp } from '@/components/layout/ClientLayout';
+import { api } from '@/services/api';
 
 interface KnowledgeMapViewProps {
   concepts: Concept[];
@@ -22,14 +23,28 @@ interface KnowledgeMapViewProps {
 const NODE_WIDTH = 210;
 const NODE_HEIGHT = 92;
 
-export const KnowledgeMapView: React.FC<KnowledgeMapViewProps> = ({ concepts }) => {
+export const KnowledgeMapView: React.FC<KnowledgeMapViewProps> = ({ concepts: initialConcepts }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { theme, selectedConceptId, setSelectedConceptId } = useApp();
+  const { theme, selectedConceptId, setSelectedConceptId, currentUser, userRefreshTrigger } = useApp();
   const isLight = theme === 'light';
 
+  const [concepts, setConcepts] = useState<Concept[]>(initialConcepts);
   const [filterStatus, setFilterStatus] = useState<MasteryStatus | 'all'>('all');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
+
+  // Synchronize concept mastery state with active user
+  useEffect(() => {
+    const loadUserConcepts = async () => {
+      try {
+        const userConcepts = await api.getConcepts();
+        setConcepts(userConcepts);
+      } catch (err) {
+        console.error('Failed to load user concepts for knowledge map:', err);
+      }
+    };
+    loadUserConcepts();
+  }, [currentUser?.id, userRefreshTrigger]);
 
   useEffect(() => {
     const queryConcept = searchParams.get('conceptId');
@@ -109,7 +124,7 @@ export const KnowledgeMapView: React.FC<KnowledgeMapViewProps> = ({ concepts }) 
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className={`text-2xl font-semibold tracking-tight font-sans ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
               Prerequisite Knowledge Map
             </h2>
@@ -120,9 +135,16 @@ export const KnowledgeMapView: React.FC<KnowledgeMapViewProps> = ({ concepts }) 
             }`}>
               DAG Visualizer
             </span>
+            <span className={`text-xs font-mono uppercase px-2 py-0.5 rounded border ${
+              currentUser?.isNewUser
+                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+            }`}>
+              {currentUser?.name || 'Learner'}: {currentUser?.isNewUser ? 'Baseline Uncalibrated State (0% Mastery)' : `${currentUser?.overallMastery ?? 71}% Overall Mastery`}
+            </span>
           </div>
           <p className={`text-xs mt-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-            Directional dependencies governing adaptive question sequencing. Clean hierarchical layout without node overlaps.
+            Directional dependencies governing adaptive question sequencing calibrated for {currentUser?.name || 'the active learner'}.
           </p>
         </div>
 

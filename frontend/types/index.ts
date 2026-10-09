@@ -148,6 +148,7 @@ export interface UserProfile {
   itemsAnswered: number;
   reliabilityScore: number;
   statusSummary: string;
+  thetaVector?: number[]; // 58-dimensional ability vector for canonical concepts
 }
 
 export interface AuthUser {

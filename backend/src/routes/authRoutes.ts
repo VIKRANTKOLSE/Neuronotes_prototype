@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { UserService } from '../services/userService.js';
 import { USERS_STORE } from '../data/users.js';
+import { ZERO_THETA_VECTOR_58 } from '../data/concepts.js';
 import { getDbUserPassword } from '../db.js';
 
 const router = Router();
@@ -39,6 +40,7 @@ router.post('/register', async (req: Request, res: Response) => {
     itemsAnswered: 0,
     reliabilityScore: 0,
     statusSummary: 'New learner account initialized.',
+    thetaVector: [...ZERO_THETA_VECTOR_58],
     concepts: JSON.parse(JSON.stringify(baselineConcepts)),
     misconceptions: [],
     activities: [],

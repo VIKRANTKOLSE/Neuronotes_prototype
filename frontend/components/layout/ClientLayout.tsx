@@ -23,6 +23,7 @@ interface AppContextType {
   allUsers: UserProfile[];
   switchUser: (userId: string) => Promise<void>;
   userRefreshTrigger: number;
+  triggerRefresh: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -151,6 +152,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
         allUsers,
         switchUser,
         userRefreshTrigger,
+        triggerRefresh: () => setUserRefreshTrigger((prev) => prev + 1),
       }}
     >
       <div className={`min-h-screen transition-colors font-sans selection:bg-blue-600/30 selection:text-blue-200 ${

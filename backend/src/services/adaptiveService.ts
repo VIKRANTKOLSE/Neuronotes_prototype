@@ -6,6 +6,7 @@ import {
   selectOptimalAdaptiveQuestion,
   thetaToMasteryPercentage 
 } from '../psychometrics/mirtEngine.js';
+import { DiagnosticFlowService } from './diagnosticFlowService.js';
 
 export class AdaptiveService {
   /**
@@ -20,47 +21,55 @@ export class AdaptiveService {
    * Process item submission, update MIRT parameters, concept stats, and misconception flags
    */
   static processSubmission(payload: SubmissionPayload, userId?: string): SubmissionResult {
-    const user = UserService.getUser(payload.userId || userId);
-    const question = QUESTIONS_DATABASE.find(q => q.id === payload.questionId) || QUESTIONS_DATABASE[0];
+    const activeUserId = payload.userId || userId;
+    const user = UserService.getUser(activeUserId);
+    const question = QUESTIONS_DATABASE.find(q => q.id === payload.questionId) || {
+      id: payload.questionId,
+      conceptId: 'effective-nuclear-charge',
+      conceptName: 'Effective Nuclear Charge',
+      subject: 'Inorganic Chemistry',
+      stem: 'Diagnostic probe',
+      options: [
+        { id: 'opt-a', label: 'A', text: 'Option A' },
+        { id: 'opt-b', label: 'B', text: 'Option B' }
+      ],
+      correctOptionId: 'opt-a',
+      explanation: 'Foundational concept rationale.',
+      diagnosticRationale: {
+        uncertaintyReason: 'Standard diagnostic',
+        recentDifficultyReason: 'Calibrated',
+        prerequisiteReason: 'Validates prerequisite',
+        informationGainReason: 'High info gain',
+        fisherInformation: 1.5,
+        estimatedTheta: user.estimatedTheta || 0.0,
+        standardError: user.standardError || 0.35,
+        itemDiscrimination: 1.6,
+        itemDifficulty: 0.0,
+        prerequisiteCoverageIndex: 0.9,
+        utilityScore: 0.9
+      }
+    };
 
     const isCorrect = payload.selectedOptionId === question.correctOptionId;
-    const selectedOption = question.options.find(o => o.id === payload.selectedOptionId);
+    const selectedOption = question.options?.find(o => o.id === payload.selectedOptionId);
+    const priorSE = user.standardError;
 
-    // MIRT Bayesian ability update
-    const mirtUpdate = updateBayesianAbility(
-      user.estimatedTheta,
-      user.standardError,
+    // Update 58-length theta vector and synchronize knowledge graph
+    const thetaResult = DiagnosticFlowService.processAnswerAndUpdateTheta(
+      activeUserId,
+      question.conceptId,
       isCorrect,
-      question.diagnosticRationale.itemDiscrimination,
-      question.diagnosticRationale.itemDifficulty
+      question.diagnosticRationale?.itemDiscrimination || 1.6,
+      question.diagnosticRationale?.itemDifficulty || 0.0
     );
 
-    const priorTheta = user.estimatedTheta;
-    const priorSE = user.standardError;
-    user.estimatedTheta = mirtUpdate.newTheta;
-    user.standardError = mirtUpdate.newStandardError;
-    user.itemsAnswered += 1;
-    user.isNewUser = false;
-
-    // Update global overall mastery
-    user.overallMastery = thetaToMasteryPercentage(user.estimatedTheta);
-    user.reliabilityScore = Math.min(96, Math.max(20, Math.round((1 - user.standardError / 2.0) * 100)));
-
-    // Update specific concept stats
+    const priorTheta = thetaResult.priorTheta;
+    const newConceptMastery = thetaResult.conceptMastery;
     const concept = user.concepts.find(c => c.id === question.conceptId);
-    let newConceptMastery = user.overallMastery;
     if (concept) {
       concept.totalResponses += 1;
-      if (isCorrect) {
-        concept.correctResponses += 1;
-      } else {
-        concept.incorrectResponses += 1;
-      }
-      
-      const conceptTheta = user.estimatedTheta + (isCorrect ? 0.1 : -0.1);
-      concept.estimatedMastery = thetaToMasteryPercentage(conceptTheta);
-      newConceptMastery = concept.estimatedMastery;
-      concept.confidenceScore = Math.min(95, Math.round((1 - user.standardError / 2.0) * 100));
+      if (isCorrect) concept.correctResponses += 1;
+      else concept.incorrectResponses += 1;
 
       if (concept.totalResponses >= 3) {
         if (concept.estimatedMastery >= 75) {

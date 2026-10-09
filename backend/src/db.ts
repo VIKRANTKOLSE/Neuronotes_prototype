@@ -44,7 +44,7 @@ export async function initDb(): Promise<void> {
     try {
       console.log('[DB] Connecting to Supabase PostgreSQL...');
       
-      // Ensure table exists
+      // Ensure table and theta_vector column exist
       await client.query(`
         CREATE TABLE IF NOT EXISTS users (
           id VARCHAR(255) PRIMARY KEY,
@@ -60,6 +60,7 @@ export async function initDb(): Promise<void> {
           items_answered INTEGER DEFAULT 0,
           reliability_score INTEGER DEFAULT 0,
           status_summary TEXT,
+          theta_vector JSONB DEFAULT '[]'::jsonb,
           concepts JSONB DEFAULT '[]'::jsonb,
           misconceptions JSONB DEFAULT '[]'::jsonb,
           activities JSONB DEFAULT '[]'::jsonb,
@@ -68,6 +69,7 @@ export async function initDb(): Promise<void> {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS theta_vector JSONB DEFAULT '[]'::jsonb;
       `);
 
       // Check if seed users exist, insert if missing
@@ -87,6 +89,24 @@ export async function initDb(): Promise<void> {
       // Load all persisted users from DB into in-memory USERS_STORE
       const allRows = await client.query('SELECT * FROM users');
       for (const row of allRows.rows) {
+        let userConcepts = Array.isArray(row.concepts) ? row.concepts : (USER_NEW.concepts || []);
+        
+        // Ensure user-history has the complete 58-concept calibrated hierarchy
+        if (row.id === 'user-history' && (userConcepts.length < 50 || !userConcepts.some((c: any) => c.estimatedMastery > 0))) {
+          userConcepts = USER_HISTORY.concepts;
+          await client.query('UPDATE users SET concepts = $1, overall_mastery = $2, theta_vector = $3 WHERE id = $4', [
+            JSON.stringify(USER_HISTORY.concepts),
+            USER_HISTORY.overallMastery,
+            JSON.stringify(USER_HISTORY.thetaVector),
+            'user-history'
+          ]);
+          console.log('[DB] Upgraded user-history concepts to full 58-concept calibration in Supabase.');
+        }
+
+        let userThetaVector: number[] = Array.isArray(row.theta_vector) && row.theta_vector.length === 58
+          ? row.theta_vector
+          : (row.is_new_user ? [...USER_NEW.thetaVector] : [...USER_HISTORY.thetaVector]);
+
         USERS_STORE[row.id] = {
           id: row.id,
           name: row.name,
@@ -94,13 +114,14 @@ export async function initDb(): Promise<void> {
           major: row.major || 'Physical Sciences',
           avatarInitials: row.avatar_initials || row.name.slice(0, 2).toUpperCase(),
           isNewUser: row.is_new_user ?? false,
-          overallMastery: row.overall_mastery ?? 0,
+          overallMastery: row.id === 'user-history' ? USER_HISTORY.overallMastery : (row.overall_mastery ?? 0),
           estimatedTheta: row.estimated_theta ?? 0.0,
           standardError: row.standard_error ?? 1.0,
           itemsAnswered: row.items_answered ?? 0,
           reliabilityScore: row.reliability_score ?? 0,
           statusSummary: row.status_summary || '',
-          concepts: Array.isArray(row.concepts) ? row.concepts : (USER_NEW.concepts || []),
+          thetaVector: userThetaVector,
+          concepts: userConcepts,
           misconceptions: Array.isArray(row.misconceptions) ? row.misconceptions : [],
           activities: Array.isArray(row.activities) ? row.activities : [],
           tests: Array.isArray(row.tests) ? row.tests : [],
@@ -132,10 +153,10 @@ export async function saveUserToDb(user: FullUserData, password?: string): Promi
       INSERT INTO users (
         id, name, email, password, major, avatar_initials, is_new_user,
         overall_mastery, estimated_theta, standard_error, items_answered,
-        reliability_score, status_summary, concepts, misconceptions,
+        reliability_score, status_summary, theta_vector, concepts, misconceptions,
         activities, tests, notes, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW()
       )
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
@@ -150,6 +171,7 @@ export async function saveUserToDb(user: FullUserData, password?: string): Promi
         items_answered = EXCLUDED.items_answered,
         reliability_score = EXCLUDED.reliability_score,
         status_summary = EXCLUDED.status_summary,
+        theta_vector = EXCLUDED.theta_vector,
         concepts = EXCLUDED.concepts,
         misconceptions = EXCLUDED.misconceptions,
         activities = EXCLUDED.activities,
@@ -172,6 +194,7 @@ export async function saveUserToDb(user: FullUserData, password?: string): Promi
       user.itemsAnswered,
       user.reliabilityScore,
       user.statusSummary,
+      JSON.stringify(user.thetaVector || []),
       JSON.stringify(user.concepts || []),
       JSON.stringify(user.misconceptions || []),
       JSON.stringify(user.activities || []),

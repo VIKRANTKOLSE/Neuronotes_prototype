@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Clock, 
@@ -14,7 +14,11 @@ import {
   RotateCcw,
   AlertTriangle,
   FlaskConical,
-  Sparkles
+  Sparkles,
+  BookOpen,
+  Award,
+  Layers,
+  RefreshCw
 } from 'lucide-react';
 import { Question, SubmissionResult, PastTestQuestionReview } from '@/types';
 import { useApp } from '@/components/layout/ClientLayout';
@@ -24,28 +28,40 @@ import { QUESTIONS_POOL, CANONICAL_EDGES } from '@/lib/mockData';
 interface QuizViewProps {
   initialQuestion?: Question;
   isAiGenerated?: boolean;
+  initialConceptId?: string;
+  initialTopic?: string;
+  initialPhase?: number;
 }
 
 export const QuizView: React.FC<QuizViewProps> = ({
   initialQuestion = QUESTIONS_POOL[0],
   isAiGenerated = false,
+  initialConceptId = 'effective-nuclear-charge',
+  initialTopic = 'Effective Nuclear Charge',
+  initialPhase = 1,
 }) => {
   const router = useRouter();
-  const { theme, researcherMode, toggleResearcherMode, openMisconception, currentUser } = useApp();
+  const { theme, researcherMode, toggleResearcherMode, openMisconception, currentUser, triggerRefresh } = useApp();
   const isLight = theme === 'light';
 
-  const [aiActive, setAiActive] = useState<boolean>(isAiGenerated);
-  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
-  const [aiGeneratedQueue, setAiGeneratedQueue] = useState<Question[]>([]);
+  // Phase state: 1 = Fundamental Checkpoint (3 questions), 2 = Comprehensive Adaptive Quiz (10 questions)
+  const [phase, setPhase] = useState<number>(initialPhase);
+  const [conceptId, setConceptId] = useState<string>(initialConceptId);
+  const [conceptTopic, setConceptTopic] = useState<string>(initialTopic);
 
-  const [questionIndex, setQuestionIndex] = useState<number>(1);
-  const [totalQuestions] = useState<number>(5);
+  const [questionsQueue, setQuestionsQueue] = useState<Question[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question>(initialQuestion);
+  const [questionIndex, setQuestionIndex] = useState<number>(1);
+  const totalQuestions = phase === 1 ? 3 : 10;
+
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
   const [showWhyQuestion, setShowWhyQuestion] = useState<boolean>(false);
+
+  // Time is automatically allocated by the system:
+  // Phase 1: 4 mins (240s), Phase 2: 15 mins (900s)
   const [secondsElapsed, setSecondsElapsed] = useState<number>(0);
 
   // Completed items in this session
@@ -55,28 +71,57 @@ export const QuizView: React.FC<QuizViewProps> = ({
   const [sessionNoteContent, setSessionNoteContent] = useState<string>('');
   const [isSavingTest, setIsSavingTest] = useState<boolean>(false);
 
-  // Early-exit rule: wrong answer after Q3 → show prerequisites → return to dashboard
-  const [wrongAnswerCount, setWrongAnswerCount] = useState<number>(0);
-  const [earlyExitActive, setEarlyExitActive] = useState<boolean>(false);
-  const [earlyExitCountdown, setEarlyExitCountdown] = useState<number>(8);
+  // Phase 1 Outcome States
+  const [phase1Completed, setPhase1Completed] = useState<boolean>(false);
+  const [phase1Passed, setPhase1Passed] = useState<boolean>(false);
+  const [conceptSummaryData, setConceptSummaryData] = useState<any | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState<boolean>(false);
 
+  // Load questions for the active phase
+  const loadPhaseQuestions = useCallback(async (targetPhase: number, targetConcept: string) => {
+    setIsLoading(true);
+    setQuestionIndex(1);
+    setSessionReviews([]);
+    setIsSubmitted(false);
+    setSelectedOptionId(null);
+    setSubmissionResult(null);
+    setPhase1Completed(false);
+    setPhase1Passed(false);
+
+    try {
+      if (targetPhase === 1) {
+        const fundamentalQs = await api.getFundamentalQuestions(targetConcept);
+        if (fundamentalQs && fundamentalQs.length > 0) {
+          setCurrentQuestion(fundamentalQs[0]);
+          setQuestionsQueue(fundamentalQs.slice(1));
+        }
+      } else {
+        const adaptiveQs = await api.getAdaptiveQuizQuestions(targetConcept);
+        if (adaptiveQs && adaptiveQs.length > 0) {
+          setCurrentQuestion(adaptiveQs[0]);
+          setQuestionsQueue(adaptiveQs.slice(1));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load phase questions, using default pool:', err);
+      setCurrentQuestion(QUESTIONS_POOL[0]);
+      setQuestionsQueue(QUESTIONS_POOL.slice(1, targetPhase === 1 ? 3 : 10));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPhaseQuestions(phase, conceptId);
+  }, [phase, conceptId, loadPhaseQuestions]);
+
+  // Automated timer
   useEffect(() => {
     const timer = setInterval(() => {
       setSecondsElapsed((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // Countdown to dashboard when early-exit is triggered
-  useEffect(() => {
-    if (!earlyExitActive) return;
-    if (earlyExitCountdown <= 0) {
-      router.push('/');
-      return;
-    }
-    const t = setTimeout(() => setEarlyExitCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [earlyExitActive, earlyExitCountdown, router]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -125,16 +170,32 @@ export const QuizView: React.FC<QuizViewProps> = ({
           delta: parseFloat((result.thetaUpdate.newTheta - result.thetaUpdate.priorTheta).toFixed(2))
         } : undefined
       };
-      setSessionReviews((prev) => [...prev, review]);
 
-      // Early-exit rule: wrong answer after question 3
-      if (!result.isCorrect && questionIndex > 3) {
-        const newCount = wrongAnswerCount + 1;
-        setWrongAnswerCount(newCount);
-        if (newCount >= 1) {
-          setEarlyExitActive(true);
+      setSessionReviews((prev) => {
+        const nextReviews = [...prev, review];
+        
+        // If this was the last question of Phase 1 (3 items)
+        if (phase === 1 && nextReviews.length >= 3) {
+          const correctCount = nextReviews.filter(r => r.isCorrect).length;
+          setPhase1Completed(true);
+          if (correctCount === 3) {
+            setPhase1Passed(true);
+          } else {
+            setPhase1Passed(false);
+            // Load concept refresher summary
+            setLoadingSummary(true);
+            api.getConceptSummary(conceptId).then(summary => {
+              setConceptSummaryData(summary);
+              setLoadingSummary(false);
+            }).catch(() => setLoadingSummary(false));
+          }
         }
-      }
+
+        return nextReviews;
+      });
+
+      // Notify app that user mastery was updated so header/badges update live
+      triggerRefresh();
     } catch {
       const isCorrect = selectedOptionId === currentQuestion.correctOptionId;
       const fallbackResult = {
@@ -142,7 +203,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
         explanation: currentQuestion.explanation,
         conceptTested: currentQuestion.conceptName,
         newEstimatedMastery: isCorrect ? 82 : 68,
-        nextQuestionConcept: 'Gibbs Energy (ΔG)',
+        nextQuestionConcept: currentQuestion.conceptName,
       };
       setSubmissionResult(fallbackResult);
       setIsSubmitted(true);
@@ -161,41 +222,71 @@ export const QuizView: React.FC<QuizViewProps> = ({
         explanation: currentQuestion.explanation,
         latencySeconds: secondsElapsed,
       };
-      setSessionReviews((prev) => [...prev, review]);
 
-      // Early-exit rule: wrong answer after question 3 (fallback path)
-      if (!isCorrect && questionIndex > 3) {
-        const newCount = wrongAnswerCount + 1;
-        setWrongAnswerCount(newCount);
-        if (newCount >= 1) {
-          setEarlyExitActive(true);
+      setSessionReviews((prev) => {
+        const nextReviews = [...prev, review];
+        if (phase === 1 && nextReviews.length >= 3) {
+          const correctCount = nextReviews.filter(r => r.isCorrect).length;
+          setPhase1Completed(true);
+          if (correctCount === 3) {
+            setPhase1Passed(true);
+          } else {
+            setPhase1Passed(false);
+            api.getConceptSummary(conceptId).then(summary => {
+              setConceptSummaryData(summary);
+            });
+          }
         }
-      }
+        return nextReviews;
+      });
+      triggerRefresh();
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleTriggerAiTest = async () => {
-    setIsGeneratingAi(true);
-    try {
-      const generated = await api.generateAiTest({
-        numQuestions: 5,
-        userTheta: currentUser?.estimatedTheta || 0.2
-      });
-      if (generated && generated.length > 0) {
-        setAiActive(true);
-        setCurrentQuestion(generated[0]);
-        setAiGeneratedQueue(generated.slice(1));
-        setQuestionIndex(1);
-        setSessionReviews([]);
-        handleReset();
+  const handleNextQuestion = () => {
+    if (questionsQueue.length > 0) {
+      const nextQ = questionsQueue[0];
+      setQuestionsQueue((prev) => prev.slice(1));
+      setCurrentQuestion(nextQ);
+      setQuestionIndex((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setIsSubmitted(false);
+      setSubmissionResult(null);
+    } else {
+      // Completed current phase questions!
+      if (phase === 1) {
+        const correctCount = sessionReviews.filter(r => r.isCorrect).length;
+        setPhase1Completed(true);
+        if (correctCount === 3) {
+          setPhase1Passed(true);
+        } else {
+          setPhase1Passed(false);
+          api.getConceptSummary(conceptId).then(setConceptSummaryData);
+        }
+      } else {
+        // Phase 2 completed! Open finish modal
+        setFinishModalOpen(true);
       }
-    } catch (e) {
-      console.warn('AI Test generation error:', e);
-    } finally {
-      setIsGeneratingAi(false);
     }
+  };
+
+  // User unlocks Phase 2 after passing Phase 1
+  const handleProceedToPhase2 = () => {
+    setPhase(2);
+    setPhase1Completed(false);
+    setPhase1Passed(false);
+    loadPhaseQuestions(2, conceptId);
+  };
+
+  // User retests fundamentals after reading summary
+  const handleRetestFundamentals = () => {
+    setPhase(1);
+    setPhase1Completed(false);
+    setPhase1Passed(false);
+    setConceptSummaryData(null);
+    loadPhaseQuestions(1, conceptId);
   };
 
   const handleFinishAndSaveTest = async () => {
@@ -205,22 +296,18 @@ export const QuizView: React.FC<QuizViewProps> = ({
     const correctCount = sessionReviews.filter((r) => r.isCorrect).length;
     const score = Math.round((correctCount / sessionReviews.length) * 100);
     const topicsTested = Array.from(new Set(sessionReviews.map((r) => r.conceptName)));
-    const testTitle = `Adaptive Diagnostic: ${topicsTested.join(', ')}`;
+    const testTitle = `${phase === 1 ? 'Fundamental Checkpoint' : 'Adaptive Diagnostic'}: ${conceptTopic}`;
 
     try {
-      // 1. Invoke Neuronotes Psychometric AI Evaluation:
-      // Finds errors, calculates mastery across ALL 58 concepts in the knowledge graph,
-      // and synthesizes structured bold elongated mistake diagnostic summaries.
       await api.evaluateAiSession({
         questions: sessionReviews,
         title: testTitle,
         durationSeconds: secondsElapsed
       });
-
       setFinishModalOpen(false);
+      triggerRefresh();
       router.push('/tests');
-    } catch (err) {
-      console.warn('AI session evaluation failed, falling back to standard test recorder:', err);
+    } catch {
       const testPayload = {
         title: testTitle,
         durationSeconds: secondsElapsed,
@@ -249,163 +336,68 @@ export const QuizView: React.FC<QuizViewProps> = ({
         console.error('Failed to record test session:', recordErr);
       }
       setFinishModalOpen(false);
+      triggerRefresh();
       router.push('/tests');
     } finally {
       setIsSavingTest(false);
     }
   };
 
-  const handleReset = () => {
-    setSelectedOptionId(null);
-    setIsSubmitted(false);
-    setIsLoading(false);
-    setSubmissionResult(null);
-  };
-
-  const handleNextQuestion = async () => {
-    setIsLoading(true);
-    try {
-      if (aiGeneratedQueue.length > 0) {
-        const nextQ = aiGeneratedQueue[0];
-        setAiGeneratedQueue((prev) => prev.slice(1));
-        setCurrentQuestion(nextQ);
-        setQuestionIndex((prev) => Math.min(totalQuestions, prev + 1));
-        handleReset();
-      } else {
-        const nextQ = await api.getAdaptiveQuestion();
-        setCurrentQuestion(nextQ);
-        setQuestionIndex((prev) => Math.min(totalQuestions, prev + 1));
-        handleReset();
-      }
-    } catch {
-      const nextIndex = (QUESTIONS_POOL.findIndex((q) => q.id === currentQuestion.id) + 1) % QUESTIONS_POOL.length;
-      setCurrentQuestion(QUESTIONS_POOL[nextIndex]);
-      setQuestionIndex((prev) => Math.min(totalQuestions, prev + 1));
-      handleReset();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const isCorrect = submissionResult ? submissionResult.isCorrect : selectedOptionId === currentQuestion.correctOptionId;
   const selectedOption = currentQuestion.options.find((o) => o.id === selectedOptionId);
-  const hasTriggeredMisconception = isSubmitted && !isCorrect && (selectedOption?.isMisconceptionDistractor || !!submissionResult?.triggeredMisconception);
-
   const progressPct = Math.round((questionIndex / totalQuestions) * 100);
 
-  // Derive prerequisite concept names for the current concept from the knowledge graph edges
+  // Derive prerequisite concept names
   const conceptSlug = currentQuestion.conceptId;
   const prerequisiteNames = CANONICAL_EDGES
     .filter((e) => e.target === conceptSlug)
     .map((e) => e.sourceName);
 
-  // ── EARLY EXIT MODAL ─────────────────────────────────────────────────────
-  if (earlyExitActive) {
-    return (
-      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isLight ? 'bg-slate-100' : 'bg-slate-950'}`}>
-        <div className={`w-full max-w-lg rounded-2xl border shadow-2xl p-8 space-y-6 ${
-          isLight ? 'bg-white border-rose-200' : 'bg-slate-900 border-rose-900/60'
-        }`}>
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <span className={`p-2 rounded-xl border ${isLight ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
-              <XCircle className="w-6 h-6" />
-            </span>
-            <div>
-              <h2 className={`text-lg font-bold tracking-tight ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                Session Terminated — Prerequisite Gap Detected
-              </h2>
-              <p className={`text-xs font-mono mt-0.5 ${isLight ? 'text-rose-600' : 'text-rose-400'}`}>
-                Incorrect answer after Question 3 triggers early exit
-              </p>
-            </div>
-          </div>
-
-          {/* Explanation */}
-          <div className={`p-4 rounded-xl border text-sm leading-relaxed ${
-            isLight ? 'bg-amber-50 border-amber-200 text-slate-800' : 'bg-amber-500/10 border-amber-500/30 text-slate-200'
-          }`}>
-            <strong className={isLight ? 'text-slate-900' : 'text-white'}>Diagnostic result:</strong> Your response pattern on{' '}
-            <span className="font-semibold text-blue-600 dark:text-blue-400">{currentQuestion.conceptName}</span> after the baseline phase indicates insufficient prerequisite mastery. Review the concepts below before retrying this session.
-          </div>
-
-          {/* Prerequisites */}
-          <div className="space-y-2">
-            <p className={`text-xs font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-              Required Prerequisites for {currentQuestion.conceptName}
-            </p>
-            {prerequisiteNames.length > 0 ? (
-              <ul className="space-y-2">
-                {prerequisiteNames.map((name, i) => (
-                  <li key={i} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-sm font-medium ${
-                    isLight ? 'bg-blue-50 border-blue-200 text-blue-900' : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
-                  }`}>
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                      isLight ? 'bg-blue-200 text-blue-800' : 'bg-blue-500/30 text-blue-200'
-                    }`}>{i + 1}</span>
-                    {name}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={`text-sm italic ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                Review Tier 1 Foundation concepts in the Knowledge Map.
-              </p>
-            )}
-          </div>
-
-          {/* Countdown + CTA */}
-          <div className={`pt-4 border-t flex items-center justify-between gap-4 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-            <p className={`text-xs font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-              Returning to dashboard in <span className="font-bold text-rose-500">{earlyExitCountdown}s</span>...
-            </p>
-            <button
-              onClick={() => router.push('/')}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm font-mono transition shadow-md flex items-center gap-2"
-            >
-              <span>Go to Dashboard</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  // ─────────────────────────────────────────────────────────────────────────
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* TOP BAR */}
-      <div className={`rounded-xl border p-4 lg:p-5 space-y-3 ${
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* PHASE BANNER & TELEMETRY HEADER */}
+      <div className={`p-4 rounded-2xl border space-y-3 ${
         isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
       }`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className={`p-1.5 rounded-lg border ${
-              isLight ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className={`p-2 rounded-xl border ${
+              phase === 1 
+                ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400' 
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400'
             }`}>
-              <FlaskConical className="w-4 h-4" />
+              <FlaskConical className="w-5 h-5" />
             </span>
             <div>
-              <span className={`text-xs font-mono uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                Subject
-              </span>
-              <h3 className={`text-sm font-semibold font-sans ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                {currentQuestion.subject}
-              </h3>
+              <div className="flex items-center gap-2">
+                <span className={`text-[11px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${
+                  phase === 1 
+                    ? 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700' 
+                    : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700'
+                }`}>
+                  {phase === 1 ? 'Phase 1: Fundamental Checkpoint' : 'Phase 2: Comprehensive Adaptive Quiz'}
+                </span>
+                <span className="text-xs font-mono text-slate-500">
+                  Target: {currentQuestion.conceptName}
+                </span>
+              </div>
+              <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                {phase === 1 
+                  ? 'Answer 3/3 fundamental questions correctly to unlock the 10-question adaptive quiz.' 
+                  : 'Testing target topic + interconnected DAG concepts. Continuous θ calibration.'}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            {/* Question Counter */}
-            <div className="text-right">
-              <span className={`text-xs font-mono block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Progress</span>
-              <span className={`text-sm font-bold font-mono ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
-                Question {questionIndex} / {totalQuestions}
+          <div className="flex items-center gap-4">
+            <div className="text-right font-mono">
+              <span className={`text-[11px] block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Scope</span>
+              <span className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+                Item {questionIndex} / {totalQuestions}
               </span>
             </div>
 
-            {/* Timer */}
+            {/* Automated Timer */}
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-xs ${
               isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950 border-slate-800 text-slate-300'
             }`}>
@@ -413,292 +405,353 @@ export const QuizView: React.FC<QuizViewProps> = ({
               <span>{formatTime(secondsElapsed)}</span>
             </div>
 
-            {/* Neuronotes AI Generator Button */}
             <button
-              onClick={handleTriggerAiTest}
-              disabled={isGeneratingAi}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-xs transition ${
-                aiActive
-                  ? isLight ? 'bg-purple-50 text-purple-700 border-purple-200 shadow-sm' : 'bg-purple-500/10 text-purple-300 border-purple-500/30'
-                  : isLight ? 'bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border-slate-200' : 'bg-slate-950 hover:bg-purple-950/40 text-slate-300 border-slate-800'
-              }`}
-              title="Generate fresh adaptive diagnostic test using Neuronotes Psychometric AI Engine"
-            >
-              <Sparkles className={`w-3.5 h-3.5 ${isGeneratingAi ? 'animate-spin text-purple-500' : 'text-purple-500'}`} />
-              <span>{isGeneratingAi ? 'Generating...' : aiActive ? 'Adaptive AI Mode' : '✨ Generate AI Diagnostic Test'}</span>
-            </button>
-
-            <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/practice')}
               className={`text-xs font-mono underline ${isLight ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              Exit Session
+              Exit
             </button>
           </div>
         </div>
 
-        {/* Linear Progress Bar */}
+        {/* Progress Bar */}
         <div className="space-y-1">
           <div className={`h-1.5 w-full rounded-full overflow-hidden ${isLight ? 'bg-slate-200' : 'bg-slate-800'}`}>
             <div 
-              className="h-full bg-blue-600 rounded-full transition-all duration-300"
+              className={`h-full rounded-full transition-all duration-300 ${phase === 1 ? 'bg-blue-600' : 'bg-emerald-600'}`}
               style={{ width: `${progressPct}%` }}
             />
           </div>
           <div className={`flex justify-between items-center text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-            <span>Adaptive Item Stream</span>
-            <span>{progressPct}% Completed</span>
+            <span>Target Item Difficulty: Adaptive</span>
+            <span>{progressPct}% Completed ({questionIndex}/{totalQuestions})</span>
           </div>
         </div>
       </div>
 
-      {/* QUESTION CARD */}
-      <div className={`rounded-2xl border p-6 lg:p-8 space-y-6 ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
-      }`}>
-        {/* Context / Notation block */}
-        {currentQuestion.contextNotation && (
-          <div className={`p-3.5 rounded-xl border font-mono text-xs tracking-wide flex items-center justify-between ${
-            isLight ? 'bg-blue-50/70 border-blue-200 text-blue-900' : 'bg-slate-950/80 border-slate-800 text-blue-300/90'
-          }`}>
-            <span className={`font-sans font-medium ${isLight ? 'text-blue-800' : 'text-slate-400'}`}>Cell Notation:</span>
-            <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{currentQuestion.contextNotation}</span>
+      {/* --- PHASE 1 FAILED: SHOW CONCEPT REFRESHER SUMMARY --- */}
+      {phase === 1 && phase1Completed && !phase1Passed && (
+        <div className={`p-6 lg:p-8 rounded-2xl border space-y-6 shadow-md transition ${
+          isLight ? 'bg-amber-50/50 border-amber-300' : 'bg-amber-950/20 border-amber-800/80'
+        }`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 rounded-xl bg-amber-500 text-white shadow-md">
+                <BookOpen className="w-6 h-6" />
+              </span>
+              <div>
+                <span className="text-xs font-mono uppercase font-bold text-amber-800 dark:text-amber-400">
+                  Fundamental Checkpoint Incomplete ({sessionReviews.filter(r => r.isCorrect).length}/3 Correct)
+                </span>
+                <h3 className={`text-xl font-bold mt-0.5 ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                  Concept Mastery Refresher: &ldquo;{conceptTopic}&rdquo;
+                </h3>
+              </div>
+            </div>
+            <span className="text-xs font-mono px-2.5 py-1 rounded border bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-200">
+              Review Required Before Retest
+            </span>
           </div>
-        )}
 
-        {/* Question Stem */}
-        <div className="space-y-2">
-          <span className="text-xs font-mono uppercase tracking-wider text-blue-600 dark:text-blue-400 font-semibold">
-            Target Item
-          </span>
-          <p className={`text-base lg:text-lg font-medium leading-relaxed whitespace-pre-line ${
-            isLight ? 'text-slate-900' : 'text-slate-100'
-          }`}>
-            {currentQuestion.stem}
+          <p className={`text-sm leading-relaxed ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+            Because you got at least one foundational question wrong, your MIRT ability vector has registered uncertainty in this node. Review the essential principles below, then re-attend the 3-question checkpoint to prove mastery.
           </p>
-        </div>
 
-        {/* ANSWER OPTIONS (All states) */}
-        <div className="space-y-3">
-          {currentQuestion.options.map((opt) => {
-            const isSelected = selectedOptionId === opt.id;
-            const isOptionCorrect = opt.id === currentQuestion.correctOptionId;
+          {/* Refresher Details */}
+          {loadingSummary ? (
+            <div className="p-8 text-center text-xs font-mono text-slate-500">
+              Synthesizing domain knowledge summary...
+            </div>
+          ) : (
+            <div className={`p-5 rounded-xl border space-y-4 text-xs font-mono leading-relaxed ${
+              isLight ? 'bg-white border-amber-200 text-slate-800' : 'bg-slate-900 border-amber-800/60 text-slate-200'
+            }`}>
+              <div>
+                <span className="font-bold text-amber-700 dark:text-amber-400 block uppercase tracking-wider mb-1">
+                  1. Core Scientific Principle & Definition
+                </span>
+                <p className="font-sans text-sm">
+                  {conceptSummaryData?.coreDefinition || 'Core atomic/molecular principle governing electronic stability and orbital interactions.'}
+                </p>
+              </div>
 
-            let cardClasses = isLight
-              ? 'bg-white border-slate-200 text-slate-800 hover:border-slate-300 hover:bg-slate-50'
-              : 'bg-slate-950/70 border-slate-800/90 text-slate-200 hover:border-slate-700 hover:bg-slate-950';
+              <div>
+                <span className="font-bold text-amber-700 dark:text-amber-400 block uppercase tracking-wider mb-1">
+                  2. Governing Laws & Dependencies
+                </span>
+                <ul className="list-disc pl-5 space-y-1">
+                  {conceptSummaryData?.governingPrinciples?.map((p: string, idx: number) => (
+                    <li key={idx}>{p}</li>
+                  ))}
+                </ul>
+              </div>
 
-            let badgeClasses = isLight
-              ? 'bg-slate-100 border-slate-200 text-slate-700'
-              : 'bg-slate-900 border-slate-800 text-slate-400';
+              {conceptSummaryData?.keyEquations?.length > 0 && (
+                <div>
+                  <span className="font-bold text-amber-700 dark:text-amber-400 block uppercase tracking-wider mb-1">
+                    3. Essential Equations & Formulas
+                  </span>
+                  <div className="flex flex-wrap gap-2 pt-0.5">
+                    {conceptSummaryData.keyEquations.map((eq: string, idx: number) => (
+                      <span key={idx} className="px-2.5 py-1 rounded border bg-slate-100 dark:bg-slate-800 font-bold text-blue-600 dark:text-blue-400">
+                        {eq}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            if (isSelected && !isSubmitted) {
-              cardClasses = isLight
-                ? 'bg-blue-50/80 border-blue-500 text-blue-950 shadow-sm'
-                : 'bg-blue-600/10 border-blue-500 text-slate-100 shadow-[0_0_12px_rgba(37,99,235,0.15)]';
-              badgeClasses = 'bg-blue-600 text-white border-blue-500';
-            }
+              <div>
+                <span className="font-bold text-red-600 dark:text-red-400 block uppercase tracking-wider mb-1">
+                  4. Common Cognitive Misconceptions to Avoid
+                </span>
+                <ul className="list-disc pl-5 space-y-1 text-slate-700 dark:text-slate-300">
+                  {conceptSummaryData?.commonMisconceptions?.map((m: string, idx: number) => (
+                    <li key={idx}>{m}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
 
-            if (isSubmitted) {
-              if (isOptionCorrect) {
-                cardClasses = isLight
-                  ? 'bg-emerald-50 border-emerald-500 text-emerald-950 shadow-sm'
-                  : 'bg-emerald-500/10 border-emerald-500/60 text-slate-100 shadow-[0_0_12px_rgba(16,185,129,0.15)]';
-                badgeClasses = 'bg-emerald-600 text-white border-emerald-600';
-              } else if (isSelected && !isOptionCorrect) {
-                cardClasses = isLight
-                  ? 'bg-rose-50 border-rose-500 text-rose-950 shadow-sm'
-                  : 'bg-rose-500/10 border-rose-500/60 text-slate-100 shadow-[0_0_12px_rgba(244,63,94,0.15)]';
-                badgeClasses = 'bg-rose-600 text-white border-rose-600';
-              } else {
-                cardClasses = isLight
-                  ? 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
-                  : 'bg-slate-950/40 border-slate-850 text-slate-500 opacity-60';
-                badgeClasses = isLight
-                  ? 'bg-slate-100 border-slate-200 text-slate-400'
-                  : 'bg-slate-900 border-slate-800 text-slate-600';
-              }
-            }
+          {/* Action to Attend Again */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <span className={`text-xs font-mono ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              Ready to re-test? You will receive 3 fresh fundamental diagnostic probes.
+            </span>
 
-            return (
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <button
-                key={opt.id}
-                type="button"
-                disabled={isSubmitted || isLoading}
-                onClick={() => handleSelectOption(opt.id)}
-                className={`w-full p-4 lg:p-5 rounded-xl border text-left flex items-start gap-4 transition-all duration-150 ${cardClasses} ${
-                  isSubmitted ? 'cursor-default' : 'cursor-pointer'
+                onClick={() => router.push('/practice')}
+                className={`px-4 py-2.5 rounded-xl border text-xs font-mono font-medium transition ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                 }`}
               >
-                <span className={`w-7 h-7 rounded-lg border flex items-center justify-center font-mono text-xs font-semibold shrink-0 transition-colors ${badgeClasses}`}>
-                  {opt.label}
-                </span>
-                <div className="flex-1 text-sm lg:text-base leading-relaxed pt-0.5">
-                  {opt.text}
-                </div>
-                {isSubmitted && isOptionCorrect && (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                )}
-                {isSubmitted && isSelected && !isOptionCorrect && (
-                  <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                )}
+                Back to Practice
               </button>
-            );
-          })}
+              <button
+                onClick={handleRetestFundamentals}
+                className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs font-mono transition shadow-md shadow-amber-600/30 flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>I&apos;ve Reviewed — Retest Fundamentals</span>
+              </button>
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* SUBMIT ACTION BAR */}
-        {!isSubmitted ? (
-          <div className={`flex items-center justify-between pt-4 border-t ${isLight ? 'border-slate-200' : 'border-slate-800/80'}`}>
-            <span className={`text-xs font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-              {selectedOptionId ? 'Answer chosen · Ready to evaluate' : 'Select an answer option to proceed'}
+      {/* --- PHASE 1 PASSED: UNLOCK PHASE 2 MODAL/BANNER --- */}
+      {phase === 1 && phase1Completed && phase1Passed && (
+        <div className={`p-6 lg:p-8 rounded-2xl border space-y-6 shadow-md transition ${
+          isLight ? 'bg-emerald-50/60 border-emerald-300' : 'bg-emerald-950/20 border-emerald-800/80'
+        }`}>
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-md">
+              <Award className="w-6 h-6" />
             </span>
+            <div>
+              <span className="text-xs font-mono uppercase font-bold text-emerald-700 dark:text-emerald-400">
+                Perfect Score: 3/3 on Fundamentals
+              </span>
+              <h3 className={`text-xl font-bold mt-0.5 ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                Fundamentals Verified! Phase 2 Unlocked
+              </h3>
+            </div>
+          </div>
+
+          <p className={`text-sm leading-relaxed ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+            Outstanding! You correctly answered all 3 fundamental questions for <strong className="text-emerald-600 dark:text-emerald-400">{conceptTopic}</strong>. Your latent ability $\theta$ has been updated and your baseline mastery has risen. You are now cleared to enter the comprehensive 10-question adaptive quiz.
+          </p>
+
+          <div className={`p-4 rounded-xl border text-xs font-mono space-y-2 ${
+            isLight ? 'bg-white border-emerald-200 text-slate-800' : 'bg-slate-900 border-emerald-800/60 text-slate-200'
+          }`}>
+            <span className="font-bold text-emerald-700 dark:text-emerald-400 block uppercase">
+              Phase 2 Scope: 10 Adaptive Multi-Concept Questions
+            </span>
+            <p className="text-slate-600 dark:text-slate-400 font-sans text-xs">
+              This session will test {conceptTopic} alongside connected prerequisite and dependent concepts in the Knowledge Graph, dynamically updating your 58-dimensional ability vector.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
             <button
-              onClick={handleSubmit}
-              disabled={!selectedOptionId || isLoading}
-              className={`px-6 py-3 rounded-xl font-medium text-sm font-mono transition shadow-md flex items-center gap-2 ${
-                selectedOptionId && !isLoading
-                  ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/25'
-                  : isLight
-                  ? 'bg-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed'
-                  : 'bg-slate-800 text-slate-500 border border-slate-800 cursor-not-allowed'
+              onClick={() => router.push('/practice')}
+              className={`px-4 py-2.5 rounded-xl border text-xs font-mono font-medium transition ${
+                isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
               }`}
             >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  <span>Evaluating...</span>
-                </>
-              ) : (
-                <>
-                  <span>Submit Answer</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
+              Return to Practice
+            </button>
+            <button
+              onClick={handleProceedToPhase2}
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs font-mono transition shadow-md shadow-emerald-600/30 flex items-center gap-2"
+            >
+              <span>Enter 10-Question Comprehensive Quiz</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        ) : (
-          /* POST-SUBMISSION IMMEDIATE FEEDBACK */
-          <div className={`pt-4 border-t space-y-5 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-            <div className={`p-5 rounded-xl border ${
-              isCorrect 
-                ? (isLight ? 'bg-emerald-50 border-emerald-300' : 'bg-emerald-500/10 border-emerald-500/30')
-                : (isLight ? 'bg-amber-50 border-amber-300' : 'bg-amber-500/10 border-amber-500/30')
-            }`}>
-              <div className="flex items-center gap-2 mb-2">
-                {isCorrect ? (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-sm font-bold font-mono text-emerald-700 dark:text-emerald-400">✓ Correct</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm font-bold font-mono text-amber-800 dark:text-amber-300">Analysis Completed</span>
-                  </>
-                )}
-              </div>
-              <p className={`text-sm leading-relaxed ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
-                {submissionResult?.explanation || currentQuestion.explanation}
-              </p>
-            </div>
+        </div>
+      )}
 
-            {/* PSYCHOMETRIC TELEMETRY PILLS */}
-            <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl font-mono text-xs border ${
-              isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/70 border-slate-800'
+      {/* --- STANDARD QUESTION RUNNER (When not showing phase completion banner) --- */}
+      {(!phase1Completed || phase === 2) && (
+        <div className={`rounded-2xl border p-6 lg:p-8 space-y-6 ${
+          isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+        }`}>
+          {/* Context Notation */}
+          {currentQuestion.contextNotation && (
+            <div className={`p-3.5 rounded-xl border font-mono text-xs tracking-wide flex items-center justify-between ${
+              isLight ? 'bg-blue-50/70 border-blue-200 text-blue-900' : 'bg-slate-950/80 border-slate-800 text-blue-300/90'
             }`}>
-              <div>
-                <span className={`text-[11px] uppercase block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>CONCEPT TESTED</span>
-                <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{currentQuestion.conceptName}</span>
-              </div>
-              <div>
-                <span className={`text-[11px] uppercase block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>ESTIMATED MASTERY</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{submissionResult?.newEstimatedMastery || 78}%</span>
-              </div>
-              <div>
-                <span className={`text-[11px] uppercase block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>NEXT QUESTION</span>
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">{submissionResult?.nextQuestionConcept || 'Gibbs Energy (ΔG)'}</span>
-              </div>
+              <span className={`font-sans font-medium ${isLight ? 'text-blue-800' : 'text-slate-400'}`}>Chemical Context:</span>
+              <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{currentQuestion.contextNotation}</span>
             </div>
+          )}
 
-            {/* MISCONCEPTION DETECTION HOOK */}
-            {hasTriggeredMisconception && (
-              <div className={`p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border ${
-                isLight ? 'bg-amber-50 border-amber-300' : 'bg-amber-500/15 border-amber-500/40'
-              }`}>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-amber-800 dark:text-amber-300">
-                    <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    <span>POSSIBLE MISCONCEPTION DETECTED</span>
-                  </div>
-                  <p className={`text-xs ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
-                    {selectedOption?.misconceptionRationale || 'Cell potential and Gibbs free energy may be getting conflated.'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => openMisconception({
-                    id: 'misc-modal-1',
-                    conceptId: currentQuestion.conceptId,
-                    conceptName: currentQuestion.conceptName,
-                    title: 'Cell Potential and Gibbs Free Energy Conflation',
-                    statement: 'You may be treating cell potential and Gibbs free energy as independent quantities rather than recognizing their inverse thermodynamic coupling.',
-                    evidence: '2 of your last 3 responses suggest this pattern.',
-                    confidence: 'Moderate',
-                    recommendedAction: 'Review the relationship ΔG° = -nFE°cell with sign invariance exercises.',
-                    targetedQuestionsCount: 3,
-                    affectedPrerequisites: ['crystal-field-splitting-in-octahedral-field', 'ligand-field-theory']
-                  })}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-mono font-medium border whitespace-nowrap transition ${
-                    isLight 
-                      ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 shadow-sm' 
-                      : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-500/40'
-                  }`}
+          {/* Stem */}
+          <div className="space-y-2">
+            <span className="text-xs font-mono uppercase tracking-wider text-blue-600 dark:text-blue-400 font-semibold">
+              Item #{questionIndex} · {phase === 1 ? 'Fundamental Checkpoint' : 'Adaptive Probe'}
+            </span>
+            <p className={`text-base lg:text-lg font-medium leading-relaxed whitespace-pre-line ${
+              isLight ? 'text-slate-900' : 'text-slate-100'
+            }`}>
+              {currentQuestion.stem}
+            </p>
+          </div>
+
+          {/* Options Grid */}
+          <div className="space-y-3">
+            {currentQuestion.options.map((option) => {
+              const isSelected = selectedOptionId === option.id;
+              const isCorrectOpt = option.id === currentQuestion.correctOptionId;
+
+              let optionStyle = isLight 
+                ? 'bg-slate-50 border-slate-200 hover:border-blue-400 hover:bg-blue-50/30 text-slate-800' 
+                : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40 text-slate-200';
+
+              if (isSelected && !isSubmitted) {
+                optionStyle = isLight
+                  ? 'bg-blue-50 border-blue-600 text-blue-900 shadow-sm'
+                  : 'bg-blue-950/40 border-blue-500 text-blue-200 shadow-sm';
+              }
+
+              if (isSubmitted) {
+                if (isCorrectOpt) {
+                  optionStyle = isLight
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-950 font-medium'
+                    : 'bg-emerald-950/40 border-emerald-500 text-emerald-200 font-medium';
+                } else if (isSelected && !isCorrectOpt) {
+                  optionStyle = isLight
+                    ? 'bg-red-50 border-red-500 text-red-950'
+                    : 'bg-red-950/40 border-red-500 text-red-200';
+                } else {
+                  optionStyle = 'opacity-50 border-slate-200 dark:border-slate-800';
+                }
+              }
+
+              return (
+                <div
+                  key={option.id}
+                  onClick={() => handleSelectOption(option.id)}
+                  className={`p-4 rounded-xl border text-sm transition cursor-pointer flex items-start gap-3.5 ${optionStyle}`}
                 >
-                  View Misconception Report
-                </button>
-              </div>
-            )}
+                  <span className={`w-6 h-6 rounded-lg text-xs font-mono font-bold flex items-center justify-center shrink-0 border ${
+                    isSelected 
+                      ? 'bg-blue-600 text-white border-blue-600' 
+                      : isLight ? 'bg-white border-slate-300 text-slate-700' : 'bg-slate-900 border-slate-700 text-slate-300'
+                  }`}>
+                    {option.label}
+                  </span>
+                  <div className="flex-1 space-y-1">
+                    <p className="leading-relaxed">{option.text}</p>
+                    {isSubmitted && option.isMisconceptionDistractor && option.misconceptionRationale && (
+                      <p className="text-[11px] font-mono text-amber-600 dark:text-amber-400 pt-1">
+                        Cognitive Misconception Pattern: {option.misconceptionRationale}
+                      </p>
+                    )}
+                  </div>
+                  {isSubmitted && isCorrectOpt && (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  )}
+                  {isSubmitted && isSelected && !isCorrectOpt && (
+                    <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-            {/* NEXT QUESTION & FINISH TEST ACTION BUTTONS */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+          {/* Submit Action */}
+          {!isSubmitted ? (
+            <div className="flex justify-end pt-3">
               <button
-                onClick={handleReset}
-                className={`px-3 py-2 text-xs font-mono flex items-center gap-1.5 ${
-                  isLight ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-slate-200'
+                onClick={handleSubmit}
+                disabled={!selectedOptionId || isLoading}
+                className={`py-3 px-8 rounded-xl font-medium text-xs font-mono transition shadow-md flex items-center gap-2 ${
+                  !selectedOptionId || isLoading
+                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30'
                 }`}
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Try Option Re-selection (Simulation)</span>
+                <span>{isLoading ? 'Calibrating MIRT Parameters...' : 'Submit Diagnostic Response'}</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
+            </div>
+          ) : (
+            /* Post-submission Review Block */
+            <div className="space-y-5 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className={`p-4 rounded-xl border space-y-2 ${
+                isCorrect 
+                  ? isLight ? 'bg-emerald-50 border-emerald-200' : 'bg-emerald-950/20 border-emerald-800' 
+                  : isLight ? 'bg-red-50 border-red-200' : 'bg-red-950/20 border-red-800'
+              }`}>
+                <div className="flex items-center gap-2 font-bold text-sm">
+                  {isCorrect ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-emerald-800 dark:text-emerald-300">Correct Response · Latent Ability θ Boosted</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      <span className="text-red-800 dark:text-red-300">Incorrect Response · Uncertainty Flagged</span>
+                    </>
+                  )}
+                </div>
+                <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
+                  {currentQuestion.explanation}
+                </p>
+              </div>
 
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                {sessionReviews.length > 0 && (
-                  <button
-                    onClick={() => setFinishModalOpen(true)}
-                    className={`px-4 py-2.5 rounded-xl border text-xs font-mono font-medium transition flex items-center gap-2 ${
-                      isLight 
-                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                    }`}
-                  >
-                    <span>Save to Past Tests ({sessionReviews.length})</span>
-                  </button>
-                )}
+              {/* Navigation Action Buttons */}
+              <div className="flex items-center justify-between pt-2">
+                <span className={`text-xs font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {phase === 1 
+                    ? `Phase 1 Progress: ${questionIndex} of 3 completed` 
+                    : `Phase 2 Progress: ${questionIndex} of 10 completed`}
+                </span>
 
                 <button
                   onClick={handleNextQuestion}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs font-mono transition shadow-md shadow-blue-600/30 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs font-mono transition shadow-md shadow-blue-600/30 flex items-center gap-2"
                 >
-                  <span>Proceed to Next Question</span>
+                  <span>
+                    {questionIndex < totalQuestions 
+                      ? 'Proceed to Next Item' 
+                      : phase === 1 ? 'Evaluate Phase 1 Fundamentals' : 'Complete Adaptive Quiz'}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* FINISH SESSION & SAVE MODAL */}
+      {/* FINISH MODAL FOR PHASE 2 */}
       {finishModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className={`w-full max-w-lg rounded-2xl border p-6 space-y-4 shadow-2xl transition ${
@@ -707,7 +760,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold">
-                  Complete & Save Adaptive Test
+                  Complete & Save Adaptive Diagnostic Quiz
                 </h3>
                 <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                   Record this session ({sessionReviews.length} items) into {currentUser?.name}&apos;s test history.
@@ -744,190 +797,36 @@ export const QuizView: React.FC<QuizViewProps> = ({
               </div>
             </div>
 
-            {/* Psychometric AI Evaluation Notice */}
             <div className={`p-3 rounded-xl border text-xs font-mono flex items-start gap-2.5 ${
               isLight ? 'bg-purple-50/70 border-purple-200 text-purple-900' : 'bg-purple-950/30 border-purple-800 text-purple-200'
             }`}>
               <Sparkles className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold block text-[11px]">Neuronotes Psychometric AI Engine</span>
+                <span className="font-semibold block text-[11px]">MIRT Theta Vector Calibration</span>
                 <span className="text-[10px] opacity-90 block mt-0.5 leading-relaxed">
-                  Upon saving, the Neuronotes Psychometric AI Engine analyzes your cognitive mistakes, calculates mastery for all 58 concepts across the 4-tier Knowledge Graph, and generates an in-depth elongated diagnostic summary note.
+                  Upon saving, the backend synchronizes your 58-dimensional $\theta$ vector and updates the Knowledge Graph in Supabase.
                 </span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="block text-xs font-mono font-medium text-slate-500">
-                Attach Diagnostic Note to this Session (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="Note Title: e.g. Sign rule for galvanic cell ΔG°"
-                value={sessionNoteTitle}
-                onChange={(e) => setSessionNoteTitle(e.target.value)}
-                className={`w-full px-3 py-2 text-xs rounded-lg border outline-none ${
-                  isLight ? 'bg-slate-50 border-slate-200 focus:border-blue-500' : 'bg-slate-800 border-slate-700 focus:border-blue-500'
-                }`}
-              />
-              <textarea
-                rows={3}
-                placeholder="Write observations, tricky formulas, or mistakes to review later in your Notes..."
-                value={sessionNoteContent}
-                onChange={(e) => setSessionNoteContent(e.target.value)}
-                className={`w-full px-3 py-2 text-xs rounded-lg border outline-none ${
-                  isLight ? 'bg-slate-50 border-slate-200 focus:border-blue-500' : 'bg-slate-800 border-slate-700 focus:border-blue-500'
-                }`}
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-3 pt-2">
               <button
-                type="button"
                 onClick={() => setFinishModalOpen(false)}
-                className={`px-4 py-2 text-xs rounded-lg border ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
-                }`}
+                className="px-4 py-2 rounded-lg text-xs font-mono border"
               >
-                Keep Testing
+                Cancel
               </button>
               <button
                 onClick={handleFinishAndSaveTest}
                 disabled={isSavingTest}
-                className="px-4 py-2 text-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition shadow-sm"
+                className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs font-mono shadow-md"
               >
-                {isSavingTest ? 'Saving to Database...' : 'Save & View in Past Tests →'}
+                {isSavingTest ? 'Saving & Calibrating...' : 'Confirm & Save Test Session'}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* SIGNATURE FEATURE: "WHY THIS QUESTION?" */}
-      <section className={`rounded-xl border overflow-hidden transition-all ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
-      }`}>
-        <button
-          onClick={() => setShowWhyQuestion(!showWhyQuestion)}
-          className={`w-full p-4 flex items-center justify-between text-left transition ${
-            isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-850'
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            <HelpCircle className="w-4 h-4 text-blue-500" />
-            <span className={`text-sm font-medium font-sans ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
-              Why am I seeing this question?
-            </span>
-            <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${
-              isLight ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-            }`}>
-              Explainable AI
-            </span>
-          </div>
-          {showWhyQuestion ? (
-            <ChevronUp className={`w-4 h-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
-          ) : (
-            <ChevronDown className={`w-4 h-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
-          )}
-        </button>
-
-        {showWhyQuestion && (
-          <div className={`p-5 pt-2 border-t space-y-4 ${
-            isLight ? 'border-slate-200 bg-slate-50/70' : 'border-slate-800 bg-slate-950/60'
-          }`}>
-            <div className={`p-4 rounded-xl border space-y-3 ${
-              isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/90 border-slate-800'
-            }`}>
-              <p className={`text-xs font-mono font-semibold uppercase tracking-wider ${
-                isLight ? 'text-slate-700' : 'text-slate-300'
-              }`}>
-                Neuronotes selected this question because:
-              </p>
-              <ol className={`space-y-2 text-xs font-sans list-decimal list-inside leading-relaxed ${
-                isLight ? 'text-slate-700' : 'text-slate-300'
-              }`}>
-                <li className="pl-1">
-                  <strong className={isLight ? 'text-slate-900 font-semibold' : 'text-slate-100 font-medium'}>
-                    Uncertainty resolution: 
-                  </strong> 
-                  {' '}{currentQuestion.diagnosticRationale.uncertaintyReason}
-                </li>
-                <li className="pl-1">
-                  <strong className={isLight ? 'text-slate-900 font-semibold' : 'text-slate-100 font-medium'}>
-                    Targeted remediation: 
-                  </strong> 
-                  {' '}{currentQuestion.diagnosticRationale.recentDifficultyReason}
-                </li>
-                <li className="pl-1">
-                  <strong className={isLight ? 'text-slate-900 font-semibold' : 'text-slate-100 font-medium'}>
-                    Prerequisite sequencing: 
-                  </strong> 
-                  {' '}{currentQuestion.diagnosticRationale.prerequisiteReason}
-                </li>
-                <li className="pl-1">
-                  <strong className={isLight ? 'text-slate-900 font-semibold' : 'text-slate-100 font-medium'}>
-                    Information optimization: 
-                  </strong> 
-                  {' '}{currentQuestion.diagnosticRationale.informationGainReason}
-                </li>
-              </ol>
-            </div>
-
-            {/* RESEARCHER / ADMIN MODE PSYCHOMETRICS */}
-            <div className={`p-3.5 rounded-xl border space-y-2 ${
-              isLight ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800/80'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-3.5 h-3.5 text-blue-500" />
-                  <span className={`text-xs font-mono font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
-                    Psychometric Model Parameters
-                  </span>
-                </div>
-                <button
-                  onClick={toggleResearcherMode}
-                  className="text-[11px] font-mono text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  {researcherMode ? 'Hide Admin View' : 'Show Admin / Research View'}
-                </button>
-              </div>
-
-              {researcherMode ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 font-mono text-[11px]">
-                  <div className={`p-2 rounded border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-                    <span className={isLight ? 'text-slate-500 block' : 'text-slate-500 block'}>Fisher Info I(θ)</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{currentQuestion.diagnosticRationale.fisherInformation}</span>
-                  </div>
-                  <div className={`p-2 rounded border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-                    <span className={isLight ? 'text-slate-500 block' : 'text-slate-500 block'}>Estimated Ability (θ)</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">{currentQuestion.diagnosticRationale.estimatedTheta}</span>
-                  </div>
-                  <div className={`p-2 rounded border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-                    <span className={isLight ? 'text-slate-500 block' : 'text-slate-500 block'}>Standard Error σ(θ)</span>
-                    <span className="text-violet-600 dark:text-violet-400 font-bold">{currentQuestion.diagnosticRationale.standardError}</span>
-                  </div>
-                  <div className={`p-2 rounded border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-                    <span className={isLight ? 'text-slate-500 block' : 'text-slate-500 block'}>Item Discrim. (a)</span>
-                    <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{currentQuestion.diagnosticRationale.itemDiscrimination}</span>
-                  </div>
-                  <div className={`p-2 rounded border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-                    <span className={isLight ? 'text-slate-500 block' : 'text-slate-500 block'}>Prereq. Coverage</span>
-                    <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{currentQuestion.diagnosticRationale.prerequisiteCoverageIndex}</span>
-                  </div>
-                  <div className={`p-2 rounded border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-                    <span className={isLight ? 'text-slate-500 block' : 'text-slate-500 block'}>Selection Utility</span>
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">{currentQuestion.diagnosticRationale.utilityScore}</span>
-                  </div>
-                </div>
-              ) : (
-                <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-                  Mathematical item selection formulas are withheld from student view. Toggle Research Mode to inspect Fisher Information, θ, and discrimination metrics.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </section>
     </div>
   );
 };

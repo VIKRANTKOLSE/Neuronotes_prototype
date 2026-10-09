@@ -30,7 +30,8 @@ export class UserService {
       standardError: u.standardError,
       itemsAnswered: u.itemsAnswered,
       reliabilityScore: u.reliabilityScore,
-      statusSummary: u.statusSummary
+      statusSummary: u.statusSummary,
+      thetaVector: u.thetaVector || []
     }));
   }
 

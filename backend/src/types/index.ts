@@ -198,6 +198,7 @@ export interface UserProfile {
   itemsAnswered: number;
   reliabilityScore: number; // percentage
   statusSummary: string;
+  thetaVector: number[]; // 58-dimensional ability vector for canonical concepts in index order
 }
 
 export interface FullUserData extends UserProfile {

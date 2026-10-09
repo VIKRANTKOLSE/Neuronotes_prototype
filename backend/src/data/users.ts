@@ -1,5 +1,10 @@
 import { FullUserData } from '../types/index.js';
-import { BASELINE_CONCEPTS_TEMPLATE, CALIBRATED_CONCEPTS_HISTORY } from './concepts.js';
+import { 
+  BASELINE_CONCEPTS_TEMPLATE, 
+  CALIBRATED_CONCEPTS_HISTORY,
+  ZERO_THETA_VECTOR_58,
+  CALIBRATED_THETA_VECTOR_58
+} from './concepts.js';
 import { MISCONCEPTIONS_DATABASE } from './misconceptions.js';
 import { USER_HISTORY_ACTIVITIES, USER_NEW_ACTIVITIES } from './activities.js';
 import { INITIAL_TESTS_HISTORY } from './tests.js';
@@ -18,6 +23,7 @@ export const USER_NEW: FullUserData = {
   itemsAnswered: 0,
   reliabilityScore: 12,
   statusSummary: 'Unprobed baseline state. Complete adaptive diagnostic probe to begin calibration.',
+  thetaVector: [...ZERO_THETA_VECTOR_58],
   concepts: JSON.parse(JSON.stringify(BASELINE_CONCEPTS_TEMPLATE)),
   misconceptions: [],
   activities: JSON.parse(JSON.stringify(USER_NEW_ACTIVITIES)),
@@ -38,6 +44,7 @@ export const USER_HISTORY: FullUserData = {
   itemsAnswered: 54,
   reliabilityScore: 89,
   statusSummary: 'Model calibrated. Gibbs Energy has posterior uncertainty; Nernst Equation requires targeted review.',
+  thetaVector: [...CALIBRATED_THETA_VECTOR_58],
   concepts: JSON.parse(JSON.stringify(CALIBRATED_CONCEPTS_HISTORY)),
   misconceptions: JSON.parse(JSON.stringify(MISCONCEPTIONS_DATABASE)),
   activities: JSON.parse(JSON.stringify(USER_HISTORY_ACTIVITIES)),
