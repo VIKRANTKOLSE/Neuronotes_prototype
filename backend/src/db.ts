@@ -2,6 +2,7 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import { FullUserData } from './types/index.js';
 import { USERS_STORE, USER_NEW, USER_HISTORY } from './data/users.js';
+import { syncConceptsFromThetaVector } from './data/concepts.js';
 
 dotenv.config();
 
@@ -102,9 +103,30 @@ export async function initDb(): Promise<void> {
           console.log('[DB] Synced user-history to 0% unprobed baseline in Supabase.');
         }
 
+        // Ensure user-new (Elena Rostova) with 0 tests starts at 0% unprobed baseline
+        if (row.id === 'user-new' && (!row.tests || row.tests.length === 0)) {
+          userConcepts = USER_NEW.concepts;
+          await client.query('UPDATE users SET concepts = $1, overall_mastery = 0, estimated_theta = 0.0, items_answered = 0, reliability_score = 0, is_new_user = true, theta_vector = $2 WHERE id = $3', [
+            JSON.stringify(USER_NEW.concepts),
+            JSON.stringify(USER_NEW.thetaVector),
+            'user-new'
+          ]);
+          console.log('[DB] Synced user-new to 0% unprobed baseline in Supabase.');
+        }
+
         let userThetaVector: number[] = Array.isArray(row.theta_vector) && row.theta_vector.length === 58
           ? row.theta_vector
           : (row.is_new_user ? [...USER_NEW.thetaVector] : [...USER_HISTORY.thetaVector]);
+
+        // Ensure all unprobed concepts are strictly 0% and probed concepts match actual responses
+        userConcepts = syncConceptsFromThetaVector(userConcepts, userThetaVector);
+
+        // Scrub database row of any lingering 50% mock values
+        await client.query('UPDATE users SET concepts = $1, theta_vector = $2 WHERE id = $3', [
+          JSON.stringify(userConcepts),
+          JSON.stringify(userThetaVector),
+          row.id
+        ]);
 
         USERS_STORE[row.id] = {
           id: row.id,

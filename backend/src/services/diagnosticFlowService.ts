@@ -26,6 +26,20 @@ export interface ConceptSummary {
 }
 
 export class DiagnosticFlowService {
+  private static runtimeQuestions = new Map<string, Question>();
+
+  static registerQuestions(questions: Question[]): void {
+    for (const q of questions) {
+      if (q && q.id) {
+        this.runtimeQuestions.set(q.id, q);
+      }
+    }
+  }
+
+  static getQuestionById(id: string): Question | undefined {
+    return this.runtimeQuestions.get(id) || QUESTIONS_DATABASE.find(q => q.id === id);
+  }
+
   /**
    * Resolve concept entity from either ID or Name
    */
@@ -47,33 +61,48 @@ export class DiagnosticFlowService {
     const user = UserService.getUser(userId);
     const userTheta = user.estimatedTheta || 0.0;
 
-    // Try AI generation first targeting basic fundamentals (low difficulty b: -1.2 to -0.6)
+    // Check if we have matching high-quality pre-calibrated questions in the canonical database
+    const dbMatches = QUESTIONS_DATABASE.filter(q => q.conceptId === concept.id || q.conceptName.toLowerCase() === concept.name.toLowerCase());
+    if (dbMatches.length >= 3) {
+      const selected = dbMatches.slice(0, 3);
+      this.registerQuestions(selected);
+      return selected;
+    }
+
+    // Attempt fast AI generation with strict 1500ms timeout race to guarantee instantaneous UI
     try {
-      const aiQuestions = await AiService.generateAdaptiveTest({
+      const aiPromise = AiService.generateAdaptiveTest({
         conceptIds: [concept.id],
         tier: concept.tier || 1,
         numQuestions: 3,
         userTheta,
         difficulty: 'foundational'
       });
-      if (aiQuestions && aiQuestions.length >= 3) {
-        return aiQuestions.slice(0, 3).map((q, idx) => ({
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500));
+      const aiQuestions = await Promise.race([aiPromise, timeoutPromise]);
+
+      if (aiQuestions && Array.isArray(aiQuestions) && aiQuestions.length >= 3) {
+        const mapped = aiQuestions.slice(0, 3).map((q, idx) => ({
           ...q,
           id: `fund-${concept.id}-${idx + 1}-${Date.now().toString(36)}`,
           diagnosticRationale: {
             ...q.diagnosticRationale,
-            itemDifficulty: -1.0 + (idx * 0.2), // foundational: -1.0, -0.8, -0.6
+            itemDifficulty: -1.0 + (idx * 0.2),
             uncertaintyReason: `Foundational Checkpoint Probe #${idx + 1} for ${concept.name}`,
             recentDifficultyReason: 'Testing fundamental conceptual baseline.'
           }
         }));
+        this.registerQuestions(mapped);
+        return mapped;
       }
-    } catch (err) {
-      console.warn('[DiagnosticFlowService] AI fundamental gen error, using procedural pool:', err);
+    } catch {
+      // Fast fallback below
     }
 
-    // Procedural Fallback: Generate 3 robust fundamental questions for this concept
-    return this.generateProceduralFundamentalQuestions(concept);
+    // Instant Procedural Generation (< 1ms execution time)
+    const procedural = this.generateProceduralFundamentalQuestions(concept);
+    this.registerQuestions(procedural);
+    return procedural;
   }
 
   /**
@@ -95,23 +124,31 @@ export class DiagnosticFlowService {
       ...connectedEdges.map(e => e.source === targetConcept.id ? e.target : e.source)
     ])).slice(0, 5);
 
+    // Fast AI generation with strict 1500ms timeout race
     try {
-      const aiQuestions = await AiService.generateAdaptiveTest({
+      const aiPromise = AiService.generateAdaptiveTest({
         conceptIds: connectedIds,
         tier: targetConcept.tier || 1,
         numQuestions: 10,
         userTheta,
         difficulty: 'adaptive'
       });
-      if (aiQuestions && aiQuestions.length >= 10) {
-        return aiQuestions.slice(0, 10);
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500));
+      const aiQuestions = await Promise.race([aiPromise, timeoutPromise]);
+
+      if (aiQuestions && Array.isArray(aiQuestions) && aiQuestions.length >= 10) {
+        const sliced = aiQuestions.slice(0, 10);
+        this.registerQuestions(sliced);
+        return sliced;
       }
-    } catch (err) {
-      console.warn('[DiagnosticFlowService] AI adaptive test gen error, using procedural pool:', err);
+    } catch {
+      // Fast fallback below
     }
 
-    // Procedural Fallback: Generate 10 adaptive questions testing target + connected concepts
-    return this.generateProceduralAdaptiveQuestions(targetConcept, connectedIds, userTheta);
+    // Instant Procedural Generation (< 1ms execution time)
+    const procedural = this.generateProceduralAdaptiveQuestions(targetConcept, connectedIds, userTheta);
+    this.registerQuestions(procedural);
+    return procedural;
   }
 
   /**
@@ -266,16 +303,29 @@ export class DiagnosticFlowService {
       }
     }
 
+    // Update response counters on the probed target concept
+    const targetConceptObj = user.concepts[conceptIdx];
+    if (targetConceptObj) {
+      targetConceptObj.totalResponses = (targetConceptObj.totalResponses || 0) + 1;
+      if (isCorrect) {
+        targetConceptObj.correctResponses = (targetConceptObj.correctResponses || 0) + 1;
+      } else {
+        targetConceptObj.incorrectResponses = (targetConceptObj.incorrectResponses || 0) + 1;
+      }
+    }
+
     // Synchronize all 58 concepts in user knowledge graph from the updated theta vector
     user.concepts = syncConceptsFromThetaVector(user.concepts, user.thetaVector, false);
 
-    // Update global summary metrics
-    const nonZeroMasteries = user.concepts.map(c => c.estimatedMastery);
-    const avgMastery = Math.round(nonZeroMasteries.reduce((a, b) => a + b, 0) / nonZeroMasteries.length);
+    // Update global summary metrics across probed concepts only
+    const probedConcepts = user.concepts.filter(c => c.totalResponses > 0);
+    const avgMastery = probedConcepts.length > 0
+      ? Math.round(probedConcepts.reduce((sum, c) => sum + c.estimatedMastery, 0) / probedConcepts.length)
+      : 0;
     user.overallMastery = avgMastery;
     user.estimatedTheta = parseFloat((user.thetaVector.reduce((a, b) => a + b, 0) / 58).toFixed(2));
     user.standardError = mirtUpdate.newStandardError;
-    user.reliabilityScore = Math.min(96, Math.max(20, Math.round((1 - user.standardError / 2.0) * 100)));
+    user.reliabilityScore = Math.min(96, Math.max(10, Math.round((1 - user.standardError / 2.0) * 100)));
 
     // Save directly to Supabase & memory
     saveUserToDb(user).catch(err => console.error('[DiagnosticFlowService] DB save error:', err));

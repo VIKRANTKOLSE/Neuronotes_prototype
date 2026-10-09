@@ -41,7 +41,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
   initialPhase = 1,
 }) => {
   const router = useRouter();
-  const { theme, researcherMode, toggleResearcherMode, openMisconception, currentUser, triggerRefresh } = useApp();
+  const { theme, openMisconception, currentUser, triggerRefresh } = useApp();
   const isLight = theme === 'light';
 
   // Phase state: 1 = Fundamental Checkpoint (3 questions), 2 = Comprehensive Adaptive Quiz (10 questions)
@@ -56,7 +56,8 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isQuestionsLoading, setIsQuestionsLoading] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
   const [showWhyQuestion, setShowWhyQuestion] = useState<boolean>(false);
 
@@ -79,7 +80,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
   // Load questions for the active phase
   const loadPhaseQuestions = useCallback(async (targetPhase: number, targetConcept: string) => {
-    setIsLoading(true);
+    setIsQuestionsLoading(true);
     setQuestionIndex(1);
     setSessionReviews([]);
     setIsSubmitted(false);
@@ -107,7 +108,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
       setCurrentQuestion(QUESTIONS_POOL[0]);
       setQuestionsQueue(QUESTIONS_POOL.slice(1, targetPhase === 1 ? 3 : 10));
     } finally {
-      setIsLoading(false);
+      setIsQuestionsLoading(false);
     }
   }, []);
 
@@ -130,13 +131,13 @@ export const QuizView: React.FC<QuizViewProps> = ({
   };
 
   const handleSelectOption = (id: string) => {
-    if (isSubmitted || isLoading) return;
+    if (isSubmitted || isSubmitting) return;
     setSelectedOptionId(id);
   };
 
   const handleSubmit = async () => {
-    if (!selectedOptionId || isSubmitted) return;
-    setIsLoading(true);
+    if (!selectedOptionId || isSubmitted || isSubmitting) return;
+    setIsSubmitting(true);
 
     const chosenOption = currentQuestion.options.find((o) => o.id === selectedOptionId);
     const correctOpt = currentQuestion.options.find((o) => o.id === currentQuestion.correctOptionId);
@@ -177,6 +178,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
         // If this was the last question of Phase 1 (3 items)
         if (phase === 1 && nextReviews.length >= 3) {
           const correctCount = nextReviews.filter(r => r.isCorrect).length;
+          const score = Math.round((correctCount / nextReviews.length) * 100);
           setPhase1Completed(true);
           if (correctCount === 3) {
             setPhase1Passed(true);
@@ -189,6 +191,19 @@ export const QuizView: React.FC<QuizViewProps> = ({
               setLoadingSummary(false);
             }).catch(() => setLoadingSummary(false));
           }
+
+          // Strictly save attempt to history and analysis
+          api.recordTest({
+            title: `Phase 1 Fundamental Checkpoint: ${conceptTopic}`,
+            durationSeconds: secondsElapsed,
+            score,
+            correctCount,
+            totalQuestions: nextReviews.length,
+            topicsTested: [conceptTopic],
+            thetaStart: currentUser?.estimatedTheta || 0.0,
+            thetaEnd: (currentUser?.estimatedTheta || 0.0) + (score === 100 ? 0.25 : -0.25),
+            questions: nextReviews,
+          }).catch(err => console.error('Failed to auto-save Phase 1 attempt:', err));
         }
 
         return nextReviews;
@@ -227,6 +242,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
         const nextReviews = [...prev, review];
         if (phase === 1 && nextReviews.length >= 3) {
           const correctCount = nextReviews.filter(r => r.isCorrect).length;
+          const score = Math.round((correctCount / nextReviews.length) * 100);
           setPhase1Completed(true);
           if (correctCount === 3) {
             setPhase1Passed(true);
@@ -236,12 +252,24 @@ export const QuizView: React.FC<QuizViewProps> = ({
               setConceptSummaryData(summary);
             });
           }
+
+          api.recordTest({
+            title: `Phase 1 Fundamental Checkpoint: ${conceptTopic}`,
+            durationSeconds: secondsElapsed,
+            score,
+            correctCount,
+            totalQuestions: nextReviews.length,
+            topicsTested: [conceptTopic],
+            thetaStart: currentUser?.estimatedTheta || 0.0,
+            thetaEnd: (currentUser?.estimatedTheta || 0.0) + (score === 100 ? 0.25 : -0.25),
+            questions: nextReviews,
+          }).catch(err => console.error('Failed to auto-save Phase 1 attempt:', err));
         }
         return nextReviews;
       });
       triggerRefresh();
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -597,6 +625,16 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
       {/* --- STANDARD QUESTION RUNNER (When not showing phase completion banner) --- */}
       {(!phase1Completed || phase === 2) && (
+        isQuestionsLoading ? (
+          <div className={`rounded-2xl border p-12 text-center space-y-3 ${
+            isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+          }`}>
+            <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className={`text-xs font-mono ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              Retrieving calibrated diagnostic probe...
+            </p>
+          </div>
+        ) : (
         <div className={`rounded-2xl border p-6 lg:p-8 space-y-6 ${
           isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
         }`}>
@@ -689,14 +727,14 @@ export const QuizView: React.FC<QuizViewProps> = ({
             <div className="flex justify-end pt-3">
               <button
                 onClick={handleSubmit}
-                disabled={!selectedOptionId || isLoading}
+                disabled={!selectedOptionId || isSubmitting}
                 className={`py-3 px-8 rounded-xl font-medium text-xs font-mono transition shadow-md flex items-center gap-2 ${
-                  !selectedOptionId || isLoading
+                  !selectedOptionId || isSubmitting
                     ? 'bg-slate-300 text-slate-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
                     : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30'
                 }`}
               >
-                <span>{isLoading ? 'Calibrating MIRT Parameters...' : 'Submit Diagnostic Response'}</span>
+                <span>{isSubmitting ? 'Calibrating MIRT Parameters...' : 'Submit Diagnostic Response'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -749,6 +787,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
             </div>
           )}
         </div>
+        )
       )}
 
       {/* FINISH MODAL FOR PHASE 2 */}

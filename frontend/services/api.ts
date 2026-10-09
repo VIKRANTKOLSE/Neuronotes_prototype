@@ -50,9 +50,13 @@ class NeuronotesApiService {
   }
 
   private async request<T>(endpoint: string, options?: RequestInit, fallbackData?: T): Promise<T> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
+        signal: options?.signal || controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'X-User-Id': this.currentUserId,
@@ -60,14 +64,17 @@ class NeuronotesApiService {
         },
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
       return await response.json();
     } catch (error) {
+      clearTimeout(timeoutId);
       if (fallbackData !== undefined) {
-        // Fallback to local psychometric model mock data when backend is starting or offline
+        // Fallback to local psychometric model mock data when backend is slow or offline
         return fallbackData;
       }
       throw error;

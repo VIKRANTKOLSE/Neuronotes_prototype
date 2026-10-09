@@ -8,16 +8,12 @@ import { useApp } from './ClientLayout';
 
 interface HeaderProps {
   onOpenMobile: () => void;
-  researcherMode: boolean;
-  onToggleResearcherMode: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenMobile,
-  researcherMode,
-  onToggleResearcherMode,
   theme,
   onToggleTheme,
 }) => {
@@ -95,24 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Vertical divider */}
         <div className={`hidden md:block w-px h-4 ${isLight ? 'bg-[#D7DEE7]' : 'bg-slate-800'}`} />
 
-        {/* Research Mode control */}
-        <button
-          onClick={onToggleResearcherMode}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-sans border transition ${
-            researcherMode
-              ? (isLight
-                  ? 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] font-medium'
-                  : 'bg-blue-950/40 text-blue-300 border-blue-800')
-              : (isLight
-                  ? 'bg-white text-[#526176] border-[#D7DEE7] hover:text-[#172033] hover:bg-[#F8FAFC]'
-                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200')
-          }`}
-          title="Toggle psychometric parameters (Fisher Info, Theta, SE)"
-        >
-          <Activity className={`w-3.5 h-3.5 ${researcherMode ? 'text-blue-600' : 'text-slate-400'}`} />
-          <span className="hidden sm:inline">Research Mode:</span>
-          <span className={researcherMode ? 'font-semibold' : ''}>{researcherMode ? 'ON' : 'OFF'}</span>
-        </button>
+
 
         {/* Theme Toggle Button */}
         <button

@@ -7,7 +7,11 @@ export const metadata = {
 };
 
 export default async function ReviewPage() {
-  const misconceptions = await api.getMisconceptions();
+  const [misconceptions, pastTests] = await Promise.all([
+    api.getMisconceptions(),
+    api.getPastTests()
+  ]);
 
-  return <ReviewView misconceptions={misconceptions} />;
+  return <ReviewView misconceptions={misconceptions} initialTests={pastTests} />;
 }
+

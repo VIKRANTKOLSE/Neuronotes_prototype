@@ -31,7 +31,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   activities: initialActivities,
 }) => {
   const router = useRouter();
-  const { theme, researcherMode, openMisconception, setSelectedConceptId, currentUser, userRefreshTrigger } = useApp();
+  const { theme, openMisconception, setSelectedConceptId, currentUser, userRefreshTrigger } = useApp();
   const isLight = theme === 'light';
 
   const [concepts, setConcepts] = React.useState<Concept[]>(initialConcepts);
@@ -223,16 +223,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
 
-            {/* Research Mode Psychometric Parameters */}
-            {researcherMode && (
-              <div className={`pt-2 text-xs font-mono border-t flex flex-wrap items-center gap-4 ${
-                isLight ? 'border-[#EEF2F6] text-[#1D4ED8]' : 'border-slate-800 text-blue-300'
-              }`}>
-                <span>Fisher Information I(θ): {(recommendedInfo.score / 25).toFixed(2)}</span>
-                <span>Graph Degree: {recommendedInfo.connectedCount}</span>
-                <span>Information Gain Score: {recommendedInfo.score}</span>
-              </div>
-            )}
+
           </div>
 
           {/* Action CTAs: cleanly aligned */}

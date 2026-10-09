@@ -23,32 +23,41 @@ export class AdaptiveService {
   static processSubmission(payload: SubmissionPayload, userId?: string): SubmissionResult {
     const activeUserId = payload.userId || userId;
     const user = UserService.getUser(activeUserId);
-    const question = QUESTIONS_DATABASE.find(q => q.id === payload.questionId) || {
-      id: payload.questionId,
-      conceptId: 'effective-nuclear-charge',
-      conceptName: 'Effective Nuclear Charge',
-      subject: 'Inorganic Chemistry',
-      stem: 'Diagnostic probe',
-      options: [
-        { id: 'opt-a', label: 'A', text: 'Option A' },
-        { id: 'opt-b', label: 'B', text: 'Option B' }
-      ],
-      correctOptionId: 'opt-a',
-      explanation: 'Foundational concept rationale.',
-      diagnosticRationale: {
-        uncertaintyReason: 'Standard diagnostic',
-        recentDifficultyReason: 'Calibrated',
-        prerequisiteReason: 'Validates prerequisite',
-        informationGainReason: 'High info gain',
-        fisherInformation: 1.5,
-        estimatedTheta: user.estimatedTheta || 0.0,
-        standardError: user.standardError || 0.35,
-        itemDiscrimination: 1.6,
-        itemDifficulty: 0.0,
-        prerequisiteCoverageIndex: 0.9,
-        utilityScore: 0.9
-      }
-    };
+    const foundQuestion = DiagnosticFlowService.getQuestionById(payload.questionId);
+    let question: Question;
+    if (foundQuestion) {
+      question = foundQuestion;
+    } else {
+      const fallbackConcept = payload.questionId.startsWith('fund-')
+        ? DiagnosticFlowService.getConcept(payload.questionId.replace(/^fund-/, '').replace(/-\d+.*$/, ''))
+        : DiagnosticFlowService.getConcept('effective-nuclear-charge');
+      question = {
+        id: payload.questionId,
+        conceptId: fallbackConcept.id,
+        conceptName: fallbackConcept.name,
+        subject: fallbackConcept.subject || 'Inorganic Chemistry',
+        stem: 'Diagnostic probe',
+        options: [
+          { id: 'opt-a', label: 'A', text: 'Option A' },
+          { id: 'opt-b', label: 'B', text: 'Option B' }
+        ],
+        correctOptionId: 'opt-a',
+        explanation: 'Foundational concept rationale.',
+        diagnosticRationale: {
+          uncertaintyReason: 'Standard diagnostic',
+          recentDifficultyReason: 'Calibrated',
+          prerequisiteReason: 'Validates prerequisite',
+          informationGainReason: 'High info gain',
+          fisherInformation: 1.5,
+          estimatedTheta: user.estimatedTheta || 0.0,
+          standardError: user.standardError || 0.35,
+          itemDiscrimination: 1.6,
+          itemDifficulty: 0.0,
+          prerequisiteCoverageIndex: 0.9,
+          utilityScore: 0.9
+        }
+      };
+    }
 
     const isCorrect = payload.selectedOptionId === question.correctOptionId;
     const selectedOption = question.options?.find(o => o.id === payload.selectedOptionId);
@@ -65,31 +74,7 @@ export class AdaptiveService {
 
     const priorTheta = thetaResult.priorTheta;
     const newConceptMastery = thetaResult.conceptMastery;
-    const concept = user.concepts.find(c => c.id === question.conceptId);
-    if (concept) {
-      concept.totalResponses += 1;
-      if (isCorrect) concept.correctResponses += 1;
-      else concept.incorrectResponses += 1;
 
-      if (concept.totalResponses >= 3) {
-        if (concept.estimatedMastery >= 75) {
-          concept.status = 'strong';
-          concept.isWeakVsInsufficient = 'mastered';
-        } else if (concept.estimatedMastery >= 55) {
-          concept.status = 'developing';
-          concept.isWeakVsInsufficient = 'developing';
-        } else if (user.standardError > 0.45) {
-          concept.status = 'uncertain';
-          concept.isWeakVsInsufficient = 'developing';
-        } else {
-          concept.status = 'weak';
-          concept.isWeakVsInsufficient = 'weak';
-        }
-      } else {
-        concept.status = 'insufficient_evidence';
-        concept.isWeakVsInsufficient = 'insufficient';
-      }
-    }
 
     // Misconception detection
     let triggeredMisconception = undefined;
@@ -128,7 +113,7 @@ export class AdaptiveService {
       statusBadge: isCorrect ? 'strong' : 'developing'
     });
 
-    UserService.saveUser(user);
+    UserService.saveUser(user).catch(err => console.error('[AdaptiveService] save error:', err));
 
     return {
       isCorrect,

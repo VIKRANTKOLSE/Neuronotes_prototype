@@ -11,8 +11,6 @@ import { api } from '@/services/api';
 interface AppContextType {
   theme: 'dark' | 'light';
   toggleTheme: () => void;
-  researcherMode: boolean;
-  toggleResearcherMode: () => void;
   activeMisconception: MisconceptionItem | null;
   openMisconception: (item: MisconceptionItem) => void;
   closeMisconception: () => void;
@@ -44,7 +42,6 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
-  const [researcherMode, setResearcherMode] = useState<boolean>(false);
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [activeMisconception, setActiveMisconception] = useState<MisconceptionItem | null>(null);
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null);
@@ -109,10 +106,6 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const toggleResearcherMode = () => {
-    setResearcherMode((prev) => !prev);
-  };
-
   const openMisconception = (item: MisconceptionItem) => {
     setActiveMisconception(item);
   };
@@ -140,8 +133,6 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
       value={{
         theme,
         toggleTheme,
-        researcherMode,
-        toggleResearcherMode,
         activeMisconception,
         openMisconception,
         closeMisconception,
@@ -167,8 +158,6 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
           <>
             {/* Sidebar Navigation */}
             <Sidebar
-              researcherMode={researcherMode}
-              onToggleResearcherMode={toggleResearcherMode}
               mobileOpen={mobileOpen}
               onCloseMobile={() => setMobileOpen(false)}
               theme={theme}
@@ -179,8 +168,6 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
             <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
               <Header
                 onOpenMobile={() => setMobileOpen(true)}
-                researcherMode={researcherMode}
-                onToggleResearcherMode={toggleResearcherMode}
                 theme={theme}
                 onToggleTheme={toggleTheme}
               />

@@ -2368,33 +2368,50 @@ export const CALIBRATED_THETA_VECTOR_58: number[] = calculateThetaVectorFromConc
 export function syncConceptsFromThetaVector(
   baseConcepts: Concept[],
   thetaVector: number[],
-  isNewUser: boolean
+  _isNewUser?: boolean
 ): Concept[] {
   return baseConcepts.map((concept, index) => {
     const theta = thetaVector[index] ?? 0.0;
-    if (isNewUser && theta === 0.0 && concept.totalResponses === 0) {
+    
+    // Unprobed concepts (0 responses) must ALWAYS remain strictly 0% mastery with insufficient evidence
+    if (!concept.totalResponses || concept.totalResponses === 0) {
       return {
         ...concept,
+        totalResponses: 0,
+        correctResponses: 0,
+        incorrectResponses: 0,
         estimatedMastery: 0,
         confidenceScore: 0,
         status: 'insufficient_evidence' as MasteryStatus,
         isWeakVsInsufficient: 'insufficient' as any
       };
     }
+
+    // For probed concepts, calculate mastery from accuracy and latent theta
+    const accuracy = concept.totalResponses > 0 
+      ? concept.correctResponses / concept.totalResponses 
+      : 0;
+
+    // 2PL logistic probability at concept theta
     const rawProb = 1 / (1 + Math.exp(-1.7 * theta));
-    const mastery = Math.round(Math.min(99, Math.max(1, rawProb * 100)));
-    const confidence = Math.min(95, Math.max(35, Math.round(50 + Math.abs(theta) * 16)));
-    let status: MasteryStatus = 'developing';
-    if (mastery >= 75) status = 'strong';
-    else if (mastery >= 55) status = 'developing';
-    else if (mastery >= 40) status = 'uncertain';
+
+    // Blend: 60% empirical performance on tested items + 40% IRT ability
+    const blended = accuracy * 0.60 + rawProb * 0.40;
+    const mastery = Math.round(Math.min(99, Math.max(1, blended * 100)));
+    const confidence = Math.min(95, Math.max(25, Math.round(concept.totalResponses * 22)));
+    
+    let status: MasteryStatus = 'weak';
+    if (mastery >= 75 && accuracy >= 0.7) status = 'strong';
+    else if (mastery >= 50 && accuracy >= 0.4) status = 'developing';
+    else if (concept.totalResponses < 2) status = 'uncertain';
     else status = 'weak';
+
     return {
       ...concept,
       estimatedMastery: mastery,
       confidenceScore: confidence,
       status,
-      isWeakVsInsufficient: (mastery >= 75 ? 'mastered' : mastery < 40 ? 'weak' : 'developing') as any
+      isWeakVsInsufficient: (status === 'strong' ? 'mastered' : status === 'weak' ? 'weak' : 'developing') as any
     };
   });
 }

@@ -9,7 +9,6 @@ import {
   GitFork, 
   BarChart3, 
   AlertCircle, 
-  Sliders, 
   ChevronRight, 
   BookOpen, 
   Sun, 
@@ -19,8 +18,6 @@ import {
 import { useApp } from './ClientLayout';
 
 interface SidebarProps {
-  researcherMode: boolean;
-  onToggleResearcherMode: () => void;
   mobileOpen: boolean;
   onCloseMobile: () => void;
   theme: 'dark' | 'light';
@@ -28,8 +25,6 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  researcherMode,
-  onToggleResearcherMode,
   mobileOpen,
   onCloseMobile,
   theme,
@@ -145,35 +140,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </Link>
             );
           })}
-        </div>
-
-        {/* Research Mode Control */}
-        <div className={`px-4 py-3 border-t flex items-center justify-between ${
-          isLight ? 'border-[#D7DEE7]' : 'border-slate-800'
-        }`}>
-          <div className="flex items-center gap-2.5">
-            <Sliders className={`w-4 h-4 ${isLight ? 'text-[#526176]' : 'text-slate-400'}`} />
-            <div>
-              <p className={`text-xs font-medium ${isLight ? 'text-[#172033]' : 'text-slate-200'}`}>
-                Research Mode
-              </p>
-              <p className={`text-[10px] ${isLight ? 'text-[#718096]' : 'text-slate-400'}`}>
-                Expose θ, Fisher I(θ)
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onToggleResearcherMode}
-            className={`w-8 h-4.5 rounded-full p-0.5 transition-colors relative flex items-center ${
-              researcherMode ? 'bg-[#2563EB]' : (isLight ? 'bg-[#CBD5E1]' : 'bg-slate-700')
-            }`}
-            title="Toggle Psychometric Item Parameters"
-            aria-label="Toggle Research Mode"
-          >
-            <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-              researcherMode ? 'translate-x-3.5' : 'translate-x-0'
-            }`} />
-          </button>
         </div>
 
         {/* Footer: Appearance + User profile + Sign Out */}
